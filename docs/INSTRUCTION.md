@@ -321,8 +321,13 @@ DIM_MatHang (
 )
 
 DIM_CuaHang (
-    sk_cua_hang, ma_ch, so_dien_thoai,
-    ma_tp, ten_tp, bang, dia_chi_vp  -- denormalize VP vào đây
+    sk_cua_hang, 
+    ma_ch, 
+    so_dien_thoai,
+    ma_tp, 
+    ten_tp, 
+    bang, 
+    dia_chi_vp  -- denormalize VP vào đây
 )
 
 DIM_DiaDiem (
@@ -427,5 +432,3 @@ FROM dim_khach_hang WHERE loai_kh = 'CaHai'
 Ngoài 9 câu query, phần này cũng cần **minh họa các OLAP operation** bằng SQL cụ thể — ví dụ roll-up dùng `GROUP BY ROLLUP(bang, ten_tp, ma_ch)`, drill-down dùng WHERE filter dần từng cấp.
 
 ---
-
-Bạn muốn đi tiếp Mục 7 — Kiểm tra tính đúng đắn, hay muốn dừng lại làm rõ phần nào?

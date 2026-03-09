@@ -1,0 +1,71 @@
+services:
+  postgres:
+    image: postgres:15
+    container_name: postgres_oltp
+    environment:
+      POSTGRES_DB: oltp
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin
+    volumes:
+      - ./db/postgres:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d oltp"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dw_network
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse_dw
+    volumes:
+      - ./db/clickhouse:/docker-entrypoint-initdb.d
+      - clickhouse_data:/var/lib/clickhouse
+    ports:
+      - "8123:8123"   # HTTP interface
+      - "9000:9000"   # Native interface
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dw_network
+
+  # etl:
+  #   build: ./etl
+  #   container_name: etl_pipeline
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #     clickhouse:
+  #       condition: service_healthy
+  #   command: python run_etl.py
+  #   networks:
+  #     - dw_network
+  #   restart: on-failure
+
+  superset:
+    image: apache/superset:latest
+    container_name: superset_dashboard
+    environment:
+      - SUPERSET_SECRET_KEY=your_secret_key_here
+    ports:
+      - "8088:8088"
+    depends_on:
+      clickhouse:
+        condition: service_healthy
+    networks:
+      - dw_network
+
+volumes:
+  postgres_data:
+  clickhouse_data:
+
+networks:
+  dw_network:
+    driver: bridge
