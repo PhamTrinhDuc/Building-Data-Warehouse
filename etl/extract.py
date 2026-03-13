@@ -22,22 +22,33 @@ def wait_for_postgres(connection_string, max_retries=3):
 
 
 def extract_from_postgres():
-    """Extract dữ liệu từ schema oltp trong PostgreSQL"""
+    """Extract dữ liệu từ schema idb trong PostgreSQL"""
     
     # Connection string
     postgres_conn = "postgresql://admin:admin@localhost:5433/oltp"
     
-    print("\n=== EXTRACTING DATA FROM POSTGRESQL (Schema: oltp) ===")
+    print("\n=== EXTRACTING DATA FROM POSTGRESQL (Schema: idb) ===")
     
     # Đợi PostgreSQL sẵn sàng
     engine = wait_for_postgres(postgres_conn)
     
     data = {}
     
-    # Extract các bảng chính
+    # ============================================
+    # Extract các bảng chính với column names rõ ràng
+    # ============================================
+    
     print("\n[1/9] Extracting VanPhongDaiDien...")
     data['vanphongdaidien'] = pd.read_sql(
-        "SELECT * FROM idb.VanPhongDaiDien", 
+        """
+        SELECT 
+            maTP,
+            tenThanhPho,
+            diaChiVP,
+            bang,
+            ngayThanhLapVP
+        FROM idb.VanPhongDaiDien
+        """, 
         engine
     )
     
@@ -45,7 +56,10 @@ def extract_from_postgres():
     data['cuahang'] = pd.read_sql(
         """
         SELECT 
-            ch.*,
+            ch.maCH,
+            ch.soDienThoai,
+            ch.ngayThanhLapCH,
+            ch.VanPhongDaiDienmaTP,
             vp.tenThanhPho,
             vp.diaChiVP,
             vp.bang,
@@ -58,7 +72,16 @@ def extract_from_postgres():
     
     print("[3/9] Extracting MatHang...")
     data['mathang'] = pd.read_sql(
-        "SELECT * FROM idb.MatHang", 
+        """
+        SELECT 
+            maMH,
+            moTa,
+            loXuong,
+            trongLuong,
+            Gia,
+            ngayMoBan
+        FROM idb.MatHang
+        """, 
         engine
     )
     
@@ -66,7 +89,10 @@ def extract_from_postgres():
     data['mathang_duoctru'] = pd.read_sql(
         """
         SELECT 
-            mhdt.*,
+            mhdt.soLuongTrongKho,
+            mhdt.thoiGianNhap,
+            mhdt.MatHangmaMH,
+            mhdt.CuaHangmaCH,
             mh.moTa,
             mh.loXuong,
             mh.trongLuong,
@@ -84,7 +110,10 @@ def extract_from_postgres():
     data['khachhang'] = pd.read_sql(
         """
         SELECT 
-            kh.*,
+            kh.maKH,
+            kh.tenKH,
+            kh.ngayDatDauTien,
+            kh.VanPhongDaiDienmaTP,
             vp.tenThanhPho,
             vp.bang
         FROM idb.KhachHang kh
@@ -97,7 +126,8 @@ def extract_from_postgres():
     data['khachhang_dulich'] = pd.read_sql(
         """
         SELECT 
-            khdl.*,
+            khdl.KhachHangmaKH,
+            khdl.hoiDuLich,
             kh.tenKH,
             kh.ngayDatDauTien,
             kh.VanPhongDaiDienmaTP
@@ -111,7 +141,8 @@ def extract_from_postgres():
     data['khachhang_buudien'] = pd.read_sql(
         """
         SELECT 
-            khbd.*,
+            khbd.KhachHangmaKH,
+            khbd.hoiDuLich,
             kh.tenKH,
             kh.ngayDatDauTien,
             kh.VanPhongDaiDienmaTP
@@ -125,7 +156,9 @@ def extract_from_postgres():
     data['dondathang'] = pd.read_sql(
         """
         SELECT 
-            ddh.*,
+            ddh.maDon,
+            ddh.ngayDatHang,
+            ddh.KhachHangmaKH,
             kh.tenKH,
             kh.VanPhongDaiDienmaTP
         FROM idb.DonDatHang ddh
@@ -138,7 +171,10 @@ def extract_from_postgres():
     data['mathang_duocdat'] = pd.read_sql(
         """
         SELECT 
-            mhdd.*,
+            mhdd.soLuongDat,
+            mhdd.giaDat,
+            mhdd.MatHangmaMH,
+            mhdd.DonDatHangmaDon,
             mh.moTa,
             mh.loXuong,
             mh.trongLuong,

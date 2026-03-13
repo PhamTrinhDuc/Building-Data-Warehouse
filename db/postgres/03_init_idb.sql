@@ -4,10 +4,10 @@
 -- ================================================
 
 -- Tạo schema
-CREATE SCHEMA IF NOT EXISTS oltp;
+CREATE SCHEMA IF NOT EXISTS idb;
 
 -- Sử dụng schema
-SET search_path TO oltp;
+SET search_path TO idb;
 
 -- Bảng Văn phòng đại diện
 CREATE TABLE IF NOT EXISTS VanPhongDaiDien (
@@ -96,12 +96,5 @@ CREATE INDEX idx_khachhang_vanphong ON KhachHang(VanPhongDaiDienmaTP);
 CREATE INDEX idx_donhang_khachhang ON DonDatHang(KhachHangmaKH);
 CREATE INDEX idx_mathang_tru_cuahang ON MatHangDuocTru(CuaHangmaCH);
 CREATE INDEX idx_mathang_dat_donhang ON MatHangDuocDat(DonDatHangmaDon);
-
--- Insert dữ liệu mẫu
--- Văn phòng đại diện
-INSERT INTO VanPhongDaiDien (maTP, tenThanhPho, diaChiVP, bang, ngayThanhLapVP) VALUES
-('TP001', 'Ha Noi', '123 Nguyen Trai', 'Ha Noi', '2020-01-15'),
-('TP002', 'Ho Chi Minh', '456 Le Loi', 'Ho Chi Minh', '2020-03-20'),
-('TP003', 'Da Nang', '789 Tran Phu', 'Da Nang', '2020-05-10');
 
 COMMIT;

@@ -22,6 +22,10 @@ services:
   clickhouse:
     image: clickhouse/clickhouse-server:latest
     container_name: clickhouse_dw
+    environment:
+      - CLICKHOUSE_DB=dw
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASSWORD=admin
     volumes:
       - ./db/clickhouse:/docker-entrypoint-initdb.d
       - clickhouse_data:/var/lib/clickhouse
@@ -36,36 +40,49 @@ services:
     networks:
       - dw_network
 
-  # etl:
-  #   build: ./etl
-  #   container_name: etl_pipeline
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
-  #     clickhouse:
-  #       condition: service_healthy
-  #   command: python run_etl.py
-  #   networks:
-  #     - dw_network
-  #   restart: on-failure
-
   superset:
-    image: apache/superset:latest
+    build:
+      context: .
+      dockerfile: Dockerfile.superset   # hoặc tên file bạn đặt
     container_name: superset_dashboard
     environment:
       - SUPERSET_SECRET_KEY=your_secret_key_here
+      - SUPERSET_ADMIN_USER=admin
+      - SUPERSET_ADMIN_PASSWORD=admin
+      - SQLALCHEMY_DATABASE_URI=postgresql://admin:admin@postgres_oltp:5432/superset
+      - SUPERSET_ROW_LIMIT=5000
+      - CLICKHOUSE_HOST=clickhouse_dw
+      - CLICKHOUSE_PORT=8123
+      - CLICKHOUSE_USER=admin
+      - CLICKHOUSE_PASSWORD=admin
+      - CLICKHOUSE_DB=dw
     ports:
       - "8088:8088"
     depends_on:
+      postgres:
+        condition: service_healthy
       clickhouse:
         condition: service_healthy
+    volumes:
+      - superset_data:/var/lib/superset
     networks:
       - dw_network
 
 volumes:
   postgres_data:
   clickhouse_data:
+  superset_data:
 
 networks:
   dw_network:
     driver: bridge
+
+# docker exec <container_id> superset db upgrade
+# docker exec superset_dashboard superset init
+# docker exec -it superset_dashboard bash
+# superset fab create-admin \
+#    --username admin \
+#    --firstname Superset \
+#    --lastname Admin \
+#    --email admin@example.com \
+#    --password admin
