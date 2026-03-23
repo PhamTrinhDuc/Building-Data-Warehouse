@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
 """
 Script để tạo dữ liệu mô phỏng cho Integrated Database (IDB)
-Điều chỉnh số lượng bản ghi bằng cách thay đổi các biến NUM_* bên dưới
+
+Chức năng:
+1. Kiểm tra và tạo database 'idb' nếu chưa tồn tại
+2. Tạo schema và tất cả các bảng database
+3. Tạo dữ liệu mô phỏng
+
+Cách sử dụng:
+  python create_database.py
+
+Điều chỉnh số lượng bản ghi bằng cách thay đổi các biến NUM_* bên dưới.
 """
 
 import psycopg2
@@ -12,12 +21,12 @@ from faker import Faker
 # ============================================
 # ĐIỀU CHỈNH SỐ LƯỢNG BẢN GHI TẠI ĐÂY
 # ============================================
-NUM_VAN_PHONG = 10          # Số văn phòng đại diện
-NUM_CUA_HANG = 30           # Số cửa hàng
-NUM_MAT_HANG = 100          # Số mặt hàng
-NUM_KHACH_HANG = 500        # Số khách hàng
-NUM_DON_HANG = 1000         # Số đơn hàng
-NUM_MAT_HANG_PER_DON = 3    # Số mặt hàng trung bình mỗi đơn
+NUM_VAN_PHONG = 30          # Số văn phòng đại diện
+NUM_CUA_HANG = 50           # Số cửa hàng
+NUM_MAT_HANG = 5000          # Số mặt hàng
+NUM_KHACH_HANG = 3000        # Số khách hàng
+NUM_DON_HANG = 10000       # Số đơn hàng
+NUM_MAT_HANG_PER_DON = 4    # Số mặt hàng trung bình mỗi đơn
 
 # ============================================
 # CẤU HÌNH KẾT NỐI DATABASE
@@ -41,6 +50,181 @@ def get_connection():
     except Exception as e:
         print(f"❌ Lỗi kết nối database: {e}")
         return None
+
+def check_database_exists(host, port, user, password, database='oltp'):
+    """Kiểm tra xem database đã tồn tại hay chưa"""
+    try:
+        # Kết nối tới database postgres để kiểm tra
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            database=database,  # Kết nối tới database mặc định
+            user=user,
+            password=password
+        )
+        cursor = conn.cursor()
+        cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{database}';")
+        exists = cursor.fetchone() is not None
+        cursor.close()
+        conn.close()
+        return exists
+    except Exception as e:
+        print(f"❌ Lỗi kiểm tra database: {e}")
+        return False
+
+def create_idb_database(host, port, user, password, database='idb'):
+    """Tạo database 'idb' nếu chưa tồn tại"""
+    try:
+        conn = psycopg2.connect(
+            host=host,
+            port=port,
+            database='oltp',
+            user=user,
+            password=password
+        )
+        conn.autocommit = True
+        cursor = conn.cursor()
+        
+        # Kiểm tra xem database đã tồn tại
+        cursor.execute(f"SELECT 1 FROM pg_database WHERE datname = '{database}';")
+        if cursor.fetchone():
+            print(f"✅ Database '{database}' đã tồn tại")
+        else:
+            cursor.execute(f"CREATE DATABASE {database} ENCODING 'UTF8';")
+            print(f"✅ Database '{database}' đã được tạo")
+        
+        cursor.close()
+        conn.close()
+        return True
+    except Exception as e:
+        print(f"❌ Lỗi tạo database: {e}")
+        return False
+
+def create_schema_and_tables(conn):
+    """Tạo schema và tất cả các tables"""
+    cursor = conn.cursor()
+    try:
+        # Tạo schema
+        cursor.execute("CREATE SCHEMA IF NOT EXISTS idb;")
+        cursor.execute("SET search_path TO idb;")
+        
+        print("📋 Tạo các bảng...")
+        
+        # Bảng Văn phòng đại diện
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS VanPhongDaiDien (
+                maTP VARCHAR(10) PRIMARY KEY,
+                tenThanhPho VARCHAR(255) NOT NULL,
+                diaChiVP VARCHAR(255),
+                bang VARCHAR(255),
+                ngayThanhLapVP DATE
+            );
+        """)
+        
+        # Bảng Cửa hàng
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS CuaHang (
+                maCH VARCHAR(10) PRIMARY KEY,
+                soDienThoai VARCHAR(10),
+                ngayThanhLapCH DATE,
+                VanPhongDaiDienmaTP VARCHAR(10),
+                FOREIGN KEY (VanPhongDaiDienmaTP) REFERENCES VanPhongDaiDien(maTP) ON DELETE CASCADE
+            );
+        """)
+        
+        # Bảng Mặt hàng
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS MatHang (
+                maMH VARCHAR(10) PRIMARY KEY,
+                moTa VARCHAR(255),
+                loXuong VARCHAR(255),
+                trongLuong FLOAT,
+                Gia FLOAT,
+                ngayMoBan DATE
+            );
+        """)
+        
+        # Bảng Mặt hàng được trữ
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS MatHangDuocTru (
+                soLuongTrongKho INTEGER,
+                thoiGianNhap INTEGER,
+                MatHangmaMH VARCHAR(10),
+                CuaHangmaCH VARCHAR(10),
+                PRIMARY KEY (MatHangmaMH, CuaHangmaCH),
+                FOREIGN KEY (MatHangmaMH) REFERENCES MatHang(maMH) ON DELETE CASCADE,
+                FOREIGN KEY (CuaHangmaCH) REFERENCES CuaHang(maCH) ON DELETE CASCADE
+            );
+        """)
+        
+        # Bảng Khách hàng
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS KhachHang (
+                maKH VARCHAR(10) PRIMARY KEY,
+                tenKH VARCHAR(255),
+                ngayDatDauTien DATE,
+                VanPhongDaiDienmaTP VARCHAR(10),
+                FOREIGN KEY (VanPhongDaiDienmaTP) REFERENCES VanPhongDaiDien(maTP) ON DELETE CASCADE
+            );
+        """)
+        
+        # Bảng Khách hàng du lịch
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
+                hoiDuLich VARCHAR(10),
+                KhachHangmaKH VARCHAR(10) PRIMARY KEY,
+                FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
+            );
+        """)
+        
+        # Bảng Khách hàng bưu điện
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS KhachHangBuiDien (
+                hoiDuLich VARCHAR(10),
+                KhachHangmaKH VARCHAR(10) PRIMARY KEY,
+                FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
+            );
+        """)
+        
+        # Bảng Đơn đặt hàng
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS DonDatHang (
+                maDon VARCHAR(10) PRIMARY KEY,
+                ngayDatHang DATE,
+                KhachHangmaKH VARCHAR(10),
+                FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
+            );
+        """)
+        
+        # Bảng Mặt hàng được đặt
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS MatHangDuocDat (
+                soLuongDat INTEGER,
+                giaDat FLOAT,
+                MatHangmaMH VARCHAR(10),
+                DonDatHangmaDon VARCHAR(10),
+                PRIMARY KEY (MatHangmaMH, DonDatHangmaDon),
+                FOREIGN KEY (MatHangmaMH) REFERENCES MatHang(maMH) ON DELETE CASCADE,
+                FOREIGN KEY (DonDatHangmaDon) REFERENCES DonDatHang(maDon) ON DELETE CASCADE
+            );
+        """)
+        
+        # Tạo indexes
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_cuahang_vanphong ON CuaHang(VanPhongDaiDienmaTP);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_khachhang_vanphong ON KhachHang(VanPhongDaiDienmaTP);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_donhang_khachhang ON DonDatHang(KhachHangmaKH);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mathang_tru_cuahang ON MatHangDuocTru(CuaHangmaCH);")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_mathang_dat_donhang ON MatHangDuocDat(DonDatHangmaDon);")
+        
+        conn.commit()
+        print("✅ Schema và các bảng đã được tạo thành công")
+        return True
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Lỗi tạo schema/bảng: {e}")
+        return False
+    finally:
+        cursor.close()
 
 def clear_data(conn):
     """Xóa dữ liệu cũ"""
@@ -280,8 +464,42 @@ def generate_donhang(conn, num_records, num_khachhang, num_mathang, num_mh_per_d
 def main():
     """Hàm chính"""
     print("=" * 60)
-    print("🚀 BẮT ĐẦU TẠO DỮ LIỆU MÔ PHỎNG CHO IDB")
+    print("🚀 BẮT ĐẦU KHỞI TẠO DATABASE VÀ DỮ LIỆU MÔ PHỎNG CHO IDB")
     print("=" * 60)
+    
+    # BƯỚC 1: Tạo database nếu chưa tồn tại
+    print("\n[BƯỚC 1] Kiểm tra và tạo database 'idb'...")
+    if not create_idb_database(
+        DB_CONFIG['host'],
+        DB_CONFIG['port'],
+        DB_CONFIG['user'],
+        DB_CONFIG['password'],
+        'idb'
+    ):
+        print("❌ Không thể tạo database. Dừng lại.")
+        return
+    
+    # BƯỚC 2: Kết nối tới database 'idb'
+    print("\n[BƯỚC 2] Kết nối tới database 'idb'...")
+    # Cập nhật DB_CONFIG để kết nối tới database 'idb' thay vì 'oltp'
+    db_config = DB_CONFIG.copy()
+    db_config['database'] = 'idb'
+    
+    try:
+        conn = psycopg2.connect(**db_config)
+    except Exception as e:
+        print(f"❌ Lỗi kết nối database: {e}")
+        return
+    
+    # BƯỚC 3: Tạo schema và tables
+    print("\n[BƯỚC 3] Tạo schema và các bảng...")
+    if not create_schema_and_tables(conn):
+        print("❌ Không thể tạo schema/tables. Dừng lại.")
+        conn.close()
+        return
+    
+    # BƯỚC 4: Tạo dữ liệu mẫu
+    print("\n[BƯỚC 4] Tạo dữ liệu mô phỏng...")
     print(f"📊 Cấu hình:")
     print(f"  - Văn phòng đại diện: {NUM_VAN_PHONG}")
     print(f"  - Cửa hàng: {NUM_CUA_HANG}")
@@ -290,19 +508,14 @@ def main():
     print(f"  - Đơn hàng: {NUM_DON_HANG}")
     print("=" * 60)
     
-    # Kết nối database
-    conn = get_connection()
-    if not conn:
-        return
-    
     try:
         # Đặt search path
         cursor = conn.cursor()
         cursor.execute("SET search_path TO idb;")
         cursor.close()
         
-        # Xóa dữ liệu cũ
-        clear_data(conn)
+        # Xóa dữ liệu cũ (nếu cần)
+        # clear_data(conn)
         
         # Tạo dữ liệu mới
         generate_vanphong_daidien(conn, NUM_VAN_PHONG)
@@ -313,7 +526,7 @@ def main():
         generate_donhang(conn, NUM_DON_HANG, NUM_KHACH_HANG, NUM_MAT_HANG, NUM_MAT_HANG_PER_DON)
         
         print("=" * 60)
-        print("✅ HOÀN THÀNH TẠO DỮ LIỆU MÔ PHỎNG!")
+        print("✅ HOÀN THÀNH KHỞI TẠO DATABASE VÀ DỮ LIỆU MÔ PHỎNG!")
         print("=" * 60)
         
     except Exception as e:

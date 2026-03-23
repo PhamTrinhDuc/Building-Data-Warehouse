@@ -25,7 +25,7 @@ def extract_from_postgres():
     """Extract dữ liệu từ schema idb trong PostgreSQL"""
     
     # Connection string
-    postgres_conn = "postgresql://admin:admin@localhost:5433/oltp"
+    postgres_conn = "postgresql://admin:admin@localhost:5433/idb"
     
     print("\n=== EXTRACTING DATA FROM POSTGRESQL (Schema: idb) ===")
     

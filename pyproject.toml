@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "clickhouse-connect>=0.13.0",
+    "clickhouse-driver>=0.2.10",
     "faker>=40.8.0",
     "pandas>=2.3.3",
     "psycopg2-binary>=2.9.11",
