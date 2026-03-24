@@ -19,25 +19,16 @@ CREATE TABLE IF NOT EXISTS Dim_ThoiGian (
 ) ENGINE = MergeTree()
 ORDER BY sk_thoiGian;
 
--- Dimension: Địa điểm (từ VanPhongDaiDien)
-CREATE TABLE IF NOT EXISTS Dim_DiaDiem (
-    sk_diaDiem      Int32,
-    maTP            String,
-    tenTP           String,
-    diaChiVP        String,
-    bang            String,
-    ngayThanhLapVP  Nullable(Date)
-) ENGINE = MergeTree()
-ORDER BY sk_diaDiem;
-
 -- Dimension: Mặt hàng
 CREATE TABLE IF NOT EXISTS Dim_MatHang (
     sk_matHang   Int32,
+    tenMH        String,
     maMH         String,
     moTa         String,
     kichCo       String,
     trongLuong   Float64,
-    gia          Float64
+    gia          Float64,
+    ngayCapNhat  Nullable(Date),
 ) ENGINE = MergeTree()
 ORDER BY sk_matHang;
 
@@ -47,7 +38,9 @@ CREATE TABLE IF NOT EXISTS Dim_CuaHang (
     maCH            String,
     soDienThoai     String,
     ngayThanhLapCH  Nullable(Date),
-    tenThanhPho     String
+    tenThanhPho     String,
+    bang            String,
+    diaChiVP        String
 ) ENGINE = MergeTree()
 ORDER BY sk_cuaHang;
 
@@ -61,7 +54,8 @@ CREATE TABLE IF NOT EXISTS Dim_KhachHang (
     huongDanVien        Nullable(String),
     diaChiBuuDien       Nullable(String),
     loaiKhachHang       String,
-    sk_diaDiem          Nullable(Int32)
+    tenThanhPho         String,
+    bang                String
 ) ENGINE = MergeTree()
 ORDER BY sk_khachHang;
 

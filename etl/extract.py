@@ -75,11 +75,12 @@ def extract_from_postgres():
         """
         SELECT 
             maMH,
+            tenMH,
             moTa,
-            loXuong,
+            kichCo,
             trongLuong,
             Gia,
-            ngayMoBan
+            ngayCapNhat
         FROM idb.MatHang
         """, 
         engine
@@ -93,8 +94,9 @@ def extract_from_postgres():
             mhdt.thoiGianNhap,
             mhdt.MatHangmaMH,
             mhdt.CuaHangmaCH,
+            mh.tenMH,
             mh.moTa,
-            mh.loXuong,
+            mh.kichCo,
             mh.trongLuong,
             mh.Gia,
             ch.soDienThoai,
@@ -128,6 +130,7 @@ def extract_from_postgres():
         SELECT 
             khdl.KhachHangmaKH,
             khdl.hoiDuLich,
+            khdl.ngayDangKy,
             kh.tenKH,
             kh.ngayDatDauTien,
             kh.VanPhongDaiDienmaTP
@@ -143,6 +146,7 @@ def extract_from_postgres():
         SELECT 
             khbd.KhachHangmaKH,
             khbd.hoiDuLich,
+            khbd.ngayDangKy,
             kh.tenKH,
             kh.ngayDatDauTien,
             kh.VanPhongDaiDienmaTP
@@ -175,8 +179,9 @@ def extract_from_postgres():
             mhdd.giaDat,
             mhdd.MatHangmaMH,
             mhdd.DonDatHangmaDon,
+            mh.tenMH,
             mh.moTa,
-            mh.loXuong,
+            mh.kichCo,
             mh.trongLuong,
             ddh.ngayDatHang,
             ddh.KhachHangmaKH

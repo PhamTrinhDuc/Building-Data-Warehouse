@@ -22,10 +22,10 @@ from faker import Faker
 # ĐIỀU CHỈNH SỐ LƯỢNG BẢN GHI TẠI ĐÂY
 # ============================================
 NUM_VAN_PHONG = 30          # Số văn phòng đại diện
-NUM_CUA_HANG = 50           # Số cửa hàng
+NUM_CUA_HANG = 100        # Số cửa hàng
 NUM_MAT_HANG = 5000          # Số mặt hàng
-NUM_KHACH_HANG = 3000        # Số khách hàng
-NUM_DON_HANG = 10000       # Số đơn hàng
+NUM_KHACH_HANG = 5000        # Số khách hàng
+NUM_DON_HANG = 20000       # Số đơn hàng
 NUM_MAT_HANG_PER_DON = 4    # Số mặt hàng trung bình mỗi đơn
 
 # ============================================
@@ -136,11 +136,12 @@ def create_schema_and_tables(conn):
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS MatHang (
                 maMH VARCHAR(10) PRIMARY KEY,
+                tenMH VARCHAR(255),
                 moTa VARCHAR(255),
-                loXuong VARCHAR(255),
+                kichCo VARCHAR(255),
                 trongLuong FLOAT,
                 Gia FLOAT,
-                ngayMoBan DATE
+                ngayCapNhat DATE
             );
         """)
         
@@ -172,6 +173,7 @@ def create_schema_and_tables(conn):
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
                 hoiDuLich VARCHAR(10),
+                ngayDangKy DATE,
                 KhachHangmaKH VARCHAR(10) PRIMARY KEY,
                 FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
             );
@@ -181,6 +183,7 @@ def create_schema_and_tables(conn):
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS KhachHangBuiDien (
                 hoiDuLich VARCHAR(10),
+                ngayDangKy DATE,
                 KhachHangmaKH VARCHAR(10) PRIMARY KEY,
                 FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
             );
@@ -260,7 +263,7 @@ def generate_vanphong_daidien(conn, num_records):
     """Tạo dữ liệu Văn phòng đại diện"""
     cursor = conn.cursor()
     cities = ['Ha Noi', 'Ho Chi Minh', 'Da Nang', 'Hai Phong', 'Can Tho', 
-              'Nha Trang', 'Hue', 'Vung Tau', 'Bien Hoa', 'Buon Ma Thuot']
+              'Nha Trang', 'Hue', 'Vung Tau', 'Bien Hoa', 'Buon Ma Thuot', 'Quy Nhon', 'Thai Nguyen', 'Nam Dinh', 'Phan Thiet', 'Rach Gia', 'Long Xuyen']
     
     print(f"📍 Tạo {num_records} văn phòng đại diện...")
     
@@ -304,23 +307,23 @@ def generate_cuahang(conn, num_records, num_vanphong):
 def generate_mathang(conn, num_records):
     """Tạo dữ liệu Mặt hàng"""
     cursor = conn.cursor()
-    categories = ['Điện tử', 'Thời trang', 'Thực phẩm', 'Nội thất', 'Sách', 
-                  'Đồ chơi', 'Mỹ phẩm', 'Thể thao', 'Văn phòng phẩm', 'Gia dụng']
+    sizes = ['Nhỏ', 'Vừa', 'Lớn', 'S', 'M', 'L', 'XL', 'XXL', 'Freesize']
     
     print(f"📦 Tạo {num_records} mặt hàng...")
     
     for i in range(1, num_records + 1):
         ma_mh = f'MH{i:04d}'
+        ten_mh = fake.word().capitalize()
         mo_ta = fake.catch_phrase()
-        lo_xuong = random.choice(categories)
+        kich_co = random.choice(sizes)
         trong_luong = round(random.uniform(0.1, 50.0), 2)
         gia = round(random.uniform(10000, 5000000), 2)
-        ngay_mo_ban = fake.date_between(start_date='-2y', end_date='today')
+        ngay_cap_nhat = fake.date_between(start_date='-2y', end_date='today')
         
         cursor.execute("""
-            INSERT INTO MatHang (maMH, moTa, loXuong, trongLuong, Gia, ngayMoBan)
-            VALUES (%s, %s, %s, %s, %s, %s)
-        """, (ma_mh, mo_ta, lo_xuong, trong_luong, gia, ngay_mo_ban))
+            INSERT INTO MatHang (maMH, tenMH, moTa, kichCo, trongLuong, Gia, ngayCapNhat)
+            VALUES (%s, %s, %s, %s, %s, %s, %s)
+        """, (ma_mh, ten_mh, mo_ta, kich_co, trong_luong, gia, ngay_cap_nhat))
     
     conn.commit()
     cursor.close()
@@ -395,18 +398,20 @@ def generate_khachhang(conn, num_records, num_vanphong):
     # Tạo khách hàng du lịch
     for ma_kh in khach_hang_dulich:
         hoi_du_lich = f'HDL{random.randint(1, 50):03d}'
+        ngay_dang_ky = fake.date_between(start_date='-1y', end_date='today')
         cursor.execute("""
-            INSERT INTO KhachHangDuiLich (hoiDuLich, KhachHangmaKH)
-            VALUES (%s, %s)
-        """, (hoi_du_lich, ma_kh))
+            INSERT INTO KhachHangDuiLich (hoiDuLich, ngayDangKy, KhachHangmaKH)
+            VALUES (%s, %s, %s)
+        """, (hoi_du_lich, ngay_dang_ky, ma_kh))
     
     # Tạo khách hàng bưu điện
     for ma_kh in khach_hang_buudien:
         hoi_du_lich = f'PO{random.randint(1, 100):04d}'
+        ngay_dang_ky = fake.date_between(start_date='-1y', end_date='today')
         cursor.execute("""
-            INSERT INTO KhachHangBuiDien (hoiDuLich, KhachHangmaKH)
-            VALUES (%s, %s)
-        """, (hoi_du_lich, ma_kh))
+            INSERT INTO KhachHangBuiDien (hoiDuLich, ngayDangKy, KhachHangmaKH)
+            VALUES (%s, %s, %s)
+        """, (hoi_du_lich, ngay_dang_ky, ma_kh))
     
     conn.commit()
     cursor.close()
@@ -515,7 +520,7 @@ def main():
         cursor.close()
         
         # Xóa dữ liệu cũ (nếu cần)
-        # clear_data(conn)
+        clear_data(conn)
         
         # Tạo dữ liệu mới
         generate_vanphong_daidien(conn, NUM_VAN_PHONG)

@@ -11,7 +11,6 @@ import time
 # Mỗi entry: (tên key trong dw_data, tên bảng ClickHouse)
 LOAD_ORDER = [
     ('Dim_ThoiGian',    'Dim_ThoiGian'),
-    ('Dim_DiaDiem',     'Dim_DiaDiem'),
     ('Dim_MatHang',     'Dim_MatHang'),
     ('Dim_CuaHang',     'Dim_CuaHang'),
     ('Dim_KhachHang',   'Dim_KhachHang'),

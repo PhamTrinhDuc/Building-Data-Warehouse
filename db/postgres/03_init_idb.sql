@@ -30,11 +30,12 @@ CREATE TABLE IF NOT EXISTS CuaHang (
 -- Bảng Mặt hàng
 CREATE TABLE IF NOT EXISTS MatHang (
     maMH VARCHAR(10) PRIMARY KEY,
+    tenMH VARCHAR(255),
     moTa VARCHAR(255),
-    loXuong VARCHAR(255),
+    kichCo VARCHAR(255),
     trongLuong FLOAT,
     Gia FLOAT,
-    ngayMoBan DATE
+    ngayCapNhat DATE
 );
 
 -- Bảng Mặt hàng được trữ
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS KhachHang (
 CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
     hoiDuLich VARCHAR(10),
     KhachHangmaKH VARCHAR(10) PRIMARY KEY,
+    ngayDangKy DATE,
     FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
 );
 
@@ -68,6 +70,7 @@ CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
 CREATE TABLE IF NOT EXISTS KhachHangBuiDien (
     hoiDuLich VARCHAR(10),
     KhachHangmaKH VARCHAR(10) PRIMARY KEY,
+    ngayDangKy DATE,
     FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
 );
 

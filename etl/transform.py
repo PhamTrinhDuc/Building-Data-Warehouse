@@ -24,10 +24,10 @@ def transform_data(source_data):
     # DIMENSION: Thời gian
     # Sinh toàn bộ ngày trong khoảng dữ liệu thực tế
     # ============================================
-    print("\n[1/7] Transforming Dim_ThoiGian...")
+    print("\n[1/6] Transforming Dim_ThoiGian...")
 
     dates_ddh = pd.to_datetime(source_data['dondathang']['ngaydathang'], errors='coerce').dropna()
-    dates_mh  = pd.to_datetime(source_data['mathang']['ngaymoban'],       errors='coerce').dropna()
+    dates_mh  = pd.to_datetime(source_data['mathang']['ngaycapnhat'],       errors='coerce').dropna()
     all_dates = pd.concat([dates_ddh, dates_mh])
 
     min_date = all_dates.min().date()
@@ -44,28 +44,9 @@ def transform_data(source_data):
     dw_data['Dim_ThoiGian'] = dim_thoigian[['sk_thoiGian', 'ngay', 'thang', 'quy', 'nam']]
 
     # ============================================
-    # DIMENSION: Địa điểm  (từ VanPhongDaiDien)
-    # ============================================
-    print("[2/7] Transforming Dim_DiaDiem...")
-
-    vp = source_data['vanphongdaidien'].copy()
-    vp.columns = [c.lower() for c in vp.columns]
-
-    vp['sk_diaDiem'] = range(1, len(vp) + 1)
-
-    dw_data['Dim_DiaDiem'] = vp.rename(columns={
-        'matp'          : 'maTP',
-        'tenthanhpho'   : 'tenTP',
-        'diachivp'      : 'diaChiVP',
-        'bang'          : 'bang',
-        'ngaythanhlap'  : 'ngayThanhLapVP',
-        'ngaythanhlapvp': 'ngayThanhLapVP',
-    })[['sk_diaDiem', 'maTP', 'tenTP', 'diaChiVP', 'bang', 'ngayThanhLapVP']]
-
-    # ============================================
     # DIMENSION: Mặt hàng
     # ============================================
-    print("[3/7] Transforming Dim_MatHang...")
+    print("[2/6] Transforming Dim_MatHang...")
 
     mh = source_data['mathang'].copy()
     mh.columns = [c.lower() for c in mh.columns]
@@ -73,42 +54,46 @@ def transform_data(source_data):
 
     dw_data['Dim_MatHang'] = mh.rename(columns={
         'mamh'     : 'maMH',
+        'tenmh'    : 'tenMH',
         'mota'     : 'moTa',
-        'loxuong'  : 'kichCo',   # loXuong → kichCo theo diagram
+        'kichco'   : 'kichCo',
         'trongluong': 'trongLuong',
         'gia'      : 'gia',
-    })[['sk_matHang', 'maMH', 'moTa', 'kichCo', 'trongLuong', 'gia']]
+        'ngaycapnhat': 'ngayCapNhat',
+    })[['sk_matHang', 'maMH', 'tenMH', 'moTa', 'kichCo', 'trongLuong', 'gia', 'ngayCapNhat']]
 
     # ============================================
     # DIMENSION: Cửa hàng  (join VanPhongDaiDien)
     # ============================================
-    print("[4/7] Transforming Dim_CuaHang...")
+    print("[3/6] Transforming Dim_CuaHang...")
 
     ch = source_data['cuahang'].copy()
     ch.columns = [c.lower() for c in ch.columns]
     ch['sk_cuaHang'] = range(1, len(ch) + 1)
 
-    # tenThanhPho đã được join sẵn trong extract
+    # tenThanhPho, bang, diaChiVP đã được join sẵn trong extract
     col_map = {
         'mach'           : 'maCH',
         'sodienthoai'    : 'soDienThoai',
         'ngaythanhlap'   : 'ngayThanhLapCH',
         'ngaythanhlapch' : 'ngayThanhLapCH',
         'tenthanhpho'    : 'tenThanhPho',
+        'bang'           : 'bang',
+        'diachivp'       : 'diaChiVP',
         'vanphongdaidienmatch': 'maThanhPho',
     }
     ch = ch.rename(columns=col_map)
 
-    keep = ['sk_cuaHang', 'maCH', 'soDienThoai', 'ngayThanhLapCH', 'tenThanhPho']
+    keep = ['sk_cuaHang', 'maCH', 'soDienThoai', 'ngayThanhLapCH', 'tenThanhPho', 'bang', 'diaChiVP']
     dw_data['Dim_CuaHang'] = ch[[c for c in keep if c in ch.columns]]
 
     # ============================================
     # DIMENSION: Khách hàng
-    # Left Join KhachHangDuiLich  → huongDanVien
-    # Left Join KhachHangBuiDien  → diaChiBuuDien
+    # Left Join KhachHangDuiLich  → huongDanVien, ngayDangKyDuLich
+    # Left Join KhachHangBuiDien  → diaChiBuuDien, ngayDangKyBuuDien
     # Derive loaiKhachHang
     # ============================================
-    print("[5/7] Transforming Dim_KhachHang...")
+    print("[4/6] Transforming Dim_KhachHang...")
 
     kh     = source_data['khachhang'].copy()
     khdl   = source_data['khachhang_dulich'].copy()
@@ -120,13 +105,13 @@ def transform_data(source_data):
 
     # Left join để lấy thông tin từ bảng sub-type
     kh = kh.merge(
-        khdl[['khachhangmakh', 'hoidulich']].rename(
-            columns={'khachhangmakh': 'makh', 'hoidulich': 'huongDanVien'}
+        khdl[['khachhangmakh', 'hoidulich', 'ngaydangky']].rename(
+            columns={'khachhangmakh': 'makh', 'hoidulich': 'huongDanVien', 'ngaydangky': 'ngayDangKyDuLich'}
         ), on='makh', how='left'
     )
     kh = kh.merge(
-        khbd[['khachhangmakh', 'hoidulich']].rename(
-            columns={'khachhangmakh': 'makh', 'hoidulich': 'diaChiBuuDien'}
+        khbd[['khachhangmakh', 'hoidulich', 'ngaydangky']].rename(
+            columns={'khachhangmakh': 'makh', 'hoidulich': 'diaChiBuuDien', 'ngaydangky': 'ngayDangKyBuuDien'}
         ), on='makh', how='left'
     )
 
@@ -145,31 +130,24 @@ def transform_data(source_data):
         )
     )
 
-    # Join sk_diaDiem từ Dim_DiaDiem
-    kh = kh.merge(
-        dw_data['Dim_DiaDiem'][['sk_diaDiem', 'maTP']].rename(columns={'maTP': 'vanphongdaidienmatch'}),
-        left_on='vanphongdaidienmantp' if 'vanphongdaidienmantp' in kh.columns else
-                [c for c in kh.columns if 'vanphong' in c][0],
-        right_on='vanphongdaidienmatch',
-        how='left'
-    )
-
     kh['sk_khachHang'] = range(1, len(kh) + 1)
 
     dw_data['Dim_KhachHang'] = kh.rename(columns={
         'makh'           : 'maKH',
         'tenkh'          : 'tenKH',
         'ngaydatdautien' : 'ngayDatHangDauTien',
+        'tenthanhpho'    : 'tenThanhPho',
+        'bang'           : 'bang',
     })[[
         'sk_khachHang', 'maKH', 'tenKH', 'ngayDatHangDauTien',
-        'huongDanVien', 'diaChiBuuDien', 'loaiKhachHang', 'sk_diaDiem'
+        'huongDanVien', 'diaChiBuuDien', 'loaiKhachHang', 'tenThanhPho', 'bang'
     ]]
 
     # ============================================
     # FACT: Đơn đặt hàng
     # Source: MatHangDuocDat JOIN DonDatHang
     # ============================================
-    print("[6/7] Transforming Fact_DonDatHang...")
+    print("[5/6] Transforming Fact_DonDatHang...")
 
     mhdd = source_data['mathang_duocdat'].copy()
     mhdd.columns = [c.lower() for c in mhdd.columns]
@@ -207,7 +185,7 @@ def transform_data(source_data):
     # Source: MatHangDuocTru
     # thoiGianNhap (INTEGER, số ngày trước hiện tại) → convert sang date key
     # ============================================
-    print("[7/7] Transforming Fact_TonKho...")
+    print("[6/6] Transforming Fact_TonKho...")
 
     tk = source_data['mathang_duoctru'].copy()
     tk.columns = [c.lower() for c in tk.columns]
