@@ -12,10 +12,11 @@ import time
 LOAD_ORDER = [
     ('Dim_ThoiGian',    'Dim_ThoiGian'),
     ('Dim_MatHang',     'Dim_MatHang'),
+    ('Dim_DiaDiem',     'Dim_DiaDiem'),
     ('Dim_CuaHang',     'Dim_CuaHang'),
     ('Dim_KhachHang',   'Dim_KhachHang'),
     ('Fact_DonDatHang', 'Fact_DonDatHang'),
-    ('Fact_TonKho',     'Fact_TonKho'),
+    ('Fact_TonKho',     'Fact_TonKho')
 ]
 
 

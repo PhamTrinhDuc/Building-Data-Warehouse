@@ -21,11 +21,11 @@ from faker import Faker
 # ============================================
 # ĐIỀU CHỈNH SỐ LƯỢNG BẢN GHI TẠI ĐÂY
 # ============================================
-NUM_VAN_PHONG = 30          # Số văn phòng đại diện
-NUM_CUA_HANG = 100        # Số cửa hàng
-NUM_MAT_HANG = 5000          # Số mặt hàng
+NUM_VAN_PHONG = 80          # Số văn phòng đại diện
+NUM_CUA_HANG = 300        # Số cửa hàng
+NUM_MAT_HANG = 2000          # Số mặt hàng
 NUM_KHACH_HANG = 5000        # Số khách hàng
-NUM_DON_HANG = 20000       # Số đơn hàng
+NUM_DON_HANG = 10000       # Số đơn hàng
 NUM_MAT_HANG_PER_DON = 4    # Số mặt hàng trung bình mỗi đơn
 
 # ============================================
@@ -116,7 +116,7 @@ def create_schema_and_tables(conn):
                 maTP VARCHAR(10) PRIMARY KEY,
                 tenThanhPho VARCHAR(255) NOT NULL,
                 diaChiVP VARCHAR(255),
-                bang VARCHAR(255),
+                mien VARCHAR(255),
                 ngayThanhLapVP DATE
             );
         """)
@@ -265,19 +265,25 @@ def generate_vanphong_daidien(conn, num_records):
     cities = ['Ha Noi', 'Ho Chi Minh', 'Da Nang', 'Hai Phong', 'Can Tho', 
               'Nha Trang', 'Hue', 'Vung Tau', 'Bien Hoa', 'Buon Ma Thuot', 'Quy Nhon', 'Thai Nguyen', 'Nam Dinh', 'Phan Thiet', 'Rach Gia', 'Long Xuyen']
     
+    mien_map = {
+        'Ha Noi': 'Mien Bac', 'Hai Phong': 'Mien Bac', 'Thai Nguyen': 'Mien Bac', 'Nam Dinh': 'Mien Bac',
+        'Da Nang': 'Mien Trung', 'Nha Trang': 'Mien Trung', 'Hue': 'Mien Trung', 'Quy Nhon': 'Mien Trung', 'Phan Thiet': 'Mien Trung', 'Buon Ma Thuot': 'Mien Trung',
+        'Ho Chi Minh': 'Mien Nam', 'Can Tho': 'Mien Nam', 'Vung Tau': 'Mien Nam', 'Bien Hoa': 'Mien Nam', 'Rach Gia': 'Mien Nam', 'Long Xuyen': 'Mien Nam'
+    }
+
     print(f"📍 Tạo {num_records} văn phòng đại diện...")
     
     for i in range(1, num_records + 1):
         ma_tp = f'TP{i:03d}'
         thanh_pho = random.choice(cities)
         dia_chi = fake.street_address()
-        bang = thanh_pho
+        mien = mien_map[thanh_pho]
         ngay_thanh_lap = fake.date_between(start_date='-5y', end_date='today')
         
         cursor.execute("""
-            INSERT INTO VanPhongDaiDien (maTP, tenThanhPho, diaChiVP, bang, ngayThanhLapVP)
+            INSERT INTO VanPhongDaiDien (maTP, tenThanhPho, diaChiVP, mien, ngayThanhLapVP)
             VALUES (%s, %s, %s, %s, %s)
-        """, (ma_tp, thanh_pho, dia_chi, bang, ngay_thanh_lap))
+        """, (ma_tp, thanh_pho, dia_chi, mien, ngay_thanh_lap))
     
     conn.commit()
     cursor.close()
@@ -304,6 +310,137 @@ def generate_cuahang(conn, num_records, num_vanphong):
     cursor.close()
     print(f"✅ Đã tạo {num_records} cửa hàng")
 
+def generate_product_name():
+    """Tạo tên mặt hàng logic dựa trên loại sản phẩm"""
+    # Danh sách loại sản phẩm
+    categories = {
+        'Áo': {
+            'types': ['phông', 'sơ mi', 'khoác', 'cardigan', 'áo lót'],
+            'features': ['cotton 100%', 'vải lụa', 'quick-dry', 'thấm hút mồ hôi'],
+            'target': ['nam', 'nữ', 'trẻ em'],
+            'style': ['casual', 'thể thao', 'chuyên dụng', 'công sở'],
+            'price_range': (50000, 500000)
+        },
+        'Quần': {
+            'types': ['jean', 'kaki', 'shorts', 'legging', 'tây vải'],
+            'features': ['co giãn', 'chống nhăn', 'thấm hút', 'bền bỉ'],
+            'target': ['nam', 'nữ', 'trẻ em'],
+            'style': ['casual', 'công sở', 'thể thao'],
+            'price_range': (100000, 800000)
+        },
+        'Giày': {
+            'types': ['sneaker', 'giày lười', 'boot', 'sandal', 'giày da'],
+            'features': ['lót mềm', 'chống trơn', 'thoáng khí', 'nhẹ nhàng'],
+            'target': ['nam', 'nữ', 'trẻ em'],
+            'style': ['thể thao', 'casual', 'công sở'],
+            'price_range': (200000, 2000000)
+        },
+        'Phụ kiện': {
+            'types': ['túi', 'thắt lưng', 'nón', 'khăn', 'đồng hồ', 'kính'],
+            'features': ['bền bỉ', 'đa năng', 'cao cấp', 'thời trang'],
+            'target': ['nam', 'nữ', 'unisex'],
+            'style': ['casual', 'công sở', 'sang trọng'],
+            'price_range': (50000, 3000000)
+        },
+        'Đồ lót': {
+            'types': ['quần lót', 'áo lót', 'tất', 'áo ngủ'],
+            'features': ['cotton', 'thoáng khí', 'co giãn', 'mềm mại'],
+            'target': ['nam', 'nữ'],
+            'style': ['thường ngày', 'cao cấp'],
+            'price_range': (30000, 300000)
+        },
+        'Thể thao': {
+            'types': ['áo tập', 'quần tập', 'túi xách', 'nón thể thao', 'giày chạy'],
+            'features': ['quick-dry', 'co giãn', 'nhẹ', 'thoáng khí'],
+            'target': ['nam', 'nữ', 'unisex'],
+            'style': ['chuyên dụng', 'casual'],
+            'price_range': (150000, 2000000)
+        },
+        'Túi xách': {
+            'types': ['balo', 'túi tote', 'túi công sở', 'túi du lịch', 'ví cầm tay'],
+            'features': ['chống nước', 'chất liệu cao cấp', 'ngăn đa năng', 'độc đáo'],
+            'target': ['nam', 'nữ', 'unisex'],
+            'style': ['casual', 'công sở', 'sang trọng', 'thể thao'],
+            'price_range': (200000, 3000000)
+        },
+        'Mũ Nón': {
+            'types': ['mũ lưỡi trai', 'nón len', 'nón phớt', 'mũ beanie', 'mũ bucket'],
+            'features': ['chống tia UV', 'thoáng khí', 'dễ giặt', 'bền bỉ'],
+            'target': ['nam', 'nữ', 'trẻ em', 'unisex'],
+            'style': ['casual', 'thể thao', 'du lịch', 'thời trang'],
+            'price_range': (50000, 500000)
+        },
+        'Trang sức': {
+            'types': ['vòng tay', 'dây chuyền', 'vành tai', 'nhẫn', 'lắc chân'],
+            'features': ['bạc 925', 'mạ vàng', 'đá quý', 'thiết kế tinh tế'],
+            'target': ['nam', 'nữ', 'unisex'],
+            'style': ['cổ điển', 'hiện đại', 'sang trọng', 'tối giản'],
+            'price_range': (100000, 5000000)
+        },
+        'Chăn Ga Gối': {
+            'types': ['chăn ga', 'gối nằm', 'gối ôm', 'túi chăn', 'drap giường'],
+            'features': ['cotton 100%', 'nano', 'chống dị ứng', 'thân thiện da'],
+            'target': ['gia đình', 'người lớn', 'trẻ em', 'unisex'],
+            'style': ['cổ điển', 'hiện đại', 'sang trọng'],
+            'price_range': (150000, 2000000)
+        },
+        'Mỹ phẩm': {
+            'types': ['kem dưỡng', 'sữa rửa mặt', 'toner', 'serum', 'dưỡng thể'],
+            'features': ['organic', 'không hóa chất', 'dưỡng ẩm sâu', 'chính hãng'],
+            'target': ['nam', 'nữ', 'da nhạy cảm', 'da dầu'],
+            'style': ['tự nhiên', 'cao cấp', 'chuyên dụng'],
+            'price_range': (100000, 2000000)
+        },
+        'Khăn': {
+            'types': ['khăn tắm', 'khăn mặt', 'khăn quàng cổ', 'khăn lạnh', 'khăn đa năng'],
+            'features': ['thấm hút tốt', 'mềm mại', 'nhanh khô', 'không xù'],
+            'target': ['gia đình', 'nam', 'nữ', 'bé'],
+            'style': ['casual', 'cao cấp', 'thể thao'],
+            'price_range': (30000, 800000)
+        },
+        'Quần lót': {
+            'types': ['quần gen', 'quần bơi', 'quần biker', 'quần tai cá sấu'],
+            'features': ['co giãn cao', 'thoáng khí', 'form chuẩn', 'Spandex'],
+            'target': ['nam', 'nữ'],
+            'style': ['casual', 'thể thao', 'cao cấp'],
+            'price_range': (50000, 400000)
+        },
+        'Đồ Bơi': {
+            'types': ['áo tắm', 'quần bơi', 'bộ bơi', 'áo lội', 'áo chống nắng'],
+            'features': ['quick-dry', 'chống UVA/UVB', 'liền mình', 'hoa văn đẹp'],
+            'target': ['nam', 'nữ', 'trẻ em', 'unisex'],
+            'style': ['thể thao', 'sang trọng', 'casual'],
+            'price_range': (150000, 1500000)
+        },
+        'Tất Vớ': {
+            'types': ['tất thể thao', 'tất công sở', 'tất nylon', 'tất lạnh', 'tất len'],
+            'features': ['cotton tự nhiên', 'co giãn vừa phải', 'thoáng khí', 'chống tồn'],
+            'target': ['nam', 'nữ', 'trẻ em'],
+            'style': ['casual', 'công sở', 'thể thao'],
+            'price_range': (20000, 200000)
+        }
+    }
+    
+    # Chọn loại sản phẩm
+    category = random.choice(list(categories.keys()))
+    cat_info = categories[category]
+    
+    # Tạo tên
+    product_type = random.choice(cat_info['types'])
+    feature = random.choice(cat_info['features'])
+    target = random.choice(cat_info['target'])
+    style = random.choice(cat_info['style'])
+    
+    # Tạo tên sản phẩm logic: "Loại + Đặc điểm + Đối tượng + Phong cách"
+    # Ví dụ: "Áo phông cotton nam casual", "Quần jean co giãn nữ công sở"
+    names = [
+        f"{category} {product_type} {feature} {target} {style}",
+        f"{category} {product_type} {target} {style} - {feature.capitalize()}",
+        f"{product_type.capitalize()} {feature} {target} {category.lower()}",
+    ]
+    
+    return random.choice(names)
+
 def generate_mathang(conn, num_records):
     """Tạo dữ liệu Mặt hàng"""
     cursor = conn.cursor()
@@ -313,7 +450,7 @@ def generate_mathang(conn, num_records):
     
     for i in range(1, num_records + 1):
         ma_mh = f'MH{i:04d}'
-        ten_mh = fake.word().capitalize()
+        ten_mh = generate_product_name()
         mo_ta = fake.catch_phrase()
         kich_co = random.choice(sizes)
         trong_luong = round(random.uniform(0.1, 50.0), 2)
@@ -351,7 +488,7 @@ def generate_mathang_duoctru(conn, num_mathang, num_cuahang):
         generated.add((ma_mh, ma_ch))
         
         so_luong = random.randint(0, 1000)
-        thoi_gian_nhap = random.randint(1, 365)
+        thoi_gian_nhap = fake.date_between(start_date='-1y', end_date='today')
         
         try:
             cursor.execute("""

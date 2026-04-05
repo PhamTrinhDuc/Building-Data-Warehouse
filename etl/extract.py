@@ -35,42 +35,24 @@ def extract_from_postgres():
     data = {}
     
     # ============================================
-    # Extract các bảng chính với column names rõ ràng
+    # Extract các bảng chính cho mô hình mới
     # ============================================
     
-    print("\n[1/9] Extracting VanPhongDaiDien...")
+    print("\n[1/6] Extracting VanPhongDaiDien...")
     data['vanphongdaidien'] = pd.read_sql(
         """
         SELECT 
             maTP,
             tenThanhPho,
             diaChiVP,
-            bang,
+            mien,
             ngayThanhLapVP
         FROM idb.VanPhongDaiDien
         """, 
         engine
     )
     
-    print("[2/9] Extracting CuaHang...")
-    data['cuahang'] = pd.read_sql(
-        """
-        SELECT 
-            ch.maCH,
-            ch.soDienThoai,
-            ch.ngayThanhLapCH,
-            ch.VanPhongDaiDienmaTP,
-            vp.tenThanhPho,
-            vp.diaChiVP,
-            vp.bang,
-            vp.ngayThanhLapVP
-        FROM idb.CuaHang ch
-        LEFT JOIN idb.VanPhongDaiDien vp ON ch.VanPhongDaiDienmaTP = vp.maTP
-        """, 
-        engine
-    )
-    
-    print("[3/9] Extracting MatHang...")
+    print("[2/6] Extracting MatHang...")
     data['mathang'] = pd.read_sql(
         """
         SELECT 
@@ -86,77 +68,70 @@ def extract_from_postgres():
         engine
     )
     
-    print("[4/9] Extracting MatHangDuocTru...")
-    data['mathang_duoctru'] = pd.read_sql(
-        """
-        SELECT 
-            mhdt.soLuongTrongKho,
-            mhdt.thoiGianNhap,
-            mhdt.MatHangmaMH,
-            mhdt.CuaHangmaCH,
-            mh.tenMH,
-            mh.moTa,
-            mh.kichCo,
-            mh.trongLuong,
-            mh.Gia,
-            ch.soDienThoai,
-            ch.VanPhongDaiDienmaTP
-        FROM idb.MatHangDuocTru mhdt
-        INNER JOIN idb.MatHang mh ON mhdt.MatHangmaMH = mh.maMH
-        INNER JOIN idb.CuaHang ch ON mhdt.CuaHangmaCH = ch.maCH
-        """, 
-        engine
-    )
-    
-    print("[5/9] Extracting KhachHang...")
+    print("[3/6] Extracting KhachHang...")
     data['khachhang'] = pd.read_sql(
         """
         SELECT 
-            kh.maKH,
-            kh.tenKH,
-            kh.ngayDatDauTien,
-            kh.VanPhongDaiDienmaTP,
-            vp.tenThanhPho,
-            vp.bang
-        FROM idb.KhachHang kh
-        LEFT JOIN idb.VanPhongDaiDien vp ON kh.VanPhongDaiDienmaTP = vp.maTP
+            maKH,
+            tenKH,
+            ngayDatDauTien,
+            VanPhongDaiDienmaTP
+        FROM idb.KhachHang
         """, 
         engine
     )
     
-    print("[6/9] Extracting KhachHangDuiLich...")
+    print("[4/6] Extracting KhachHangDuiLich...")
     data['khachhang_dulich'] = pd.read_sql(
         """
         SELECT 
-            khdl.KhachHangmaKH,
-            khdl.hoiDuLich,
-            khdl.ngayDangKy,
-            kh.tenKH,
-            kh.ngayDatDauTien,
-            kh.VanPhongDaiDienmaTP
-        FROM idb.KhachHangDuiLich khdl
-        INNER JOIN idb.KhachHang kh ON khdl.KhachHangmaKH = kh.maKH
+            KhachHangmaKH,
+            hdvDuLich,
+            ngayDangKy
+        FROM idb.KhachHangDuiLich
         """, 
         engine
     )
     
-    print("[7/9] Extracting KhachHangBuiDien...")
+    print("[5/6] Extracting KhachHangBuiDien...")
     data['khachhang_buudien'] = pd.read_sql(
         """
         SELECT 
-            khbd.KhachHangmaKH,
-            khbd.hoiDuLich,
-            khbd.ngayDangKy,
-            kh.tenKH,
-            kh.ngayDatDauTien,
-            kh.VanPhongDaiDienmaTP
-        FROM idb.KhachHangBuiDien khbd
-        INNER JOIN idb.KhachHang kh ON khbd.KhachHangmaKH = kh.maKH
+            KhachHangmaKH,
+            diaChiBuuDien,
+            ngayDangKy
+        FROM idb.KhachHangBuiDien
         """, 
         engine
     )
     
-    print("[8/9] Extracting DonDatHang...")
+    print("[6/8] Extracting CuaHang...")
+    data['cuahang'] = pd.read_sql(
+        """
+        SELECT 
+            maCH,
+            soDienThoai,
+            ngayThanhLapCH,
+            VanPhongDaiDienmaTP
+        FROM idb.CuaHang
+        """, 
+        engine
+    )
+
+    print("[7/8] Extracting MatHangDuocTru...")
+    data['mathang_duoctru'] = pd.read_sql(
+        """
+        SELECT 
+            soLuongTrongKho,
+            thoiGianNhap,
+            MatHangmaMH,
+            CuaHangmaCH
+        FROM idb.MatHangDuocTru
+        """, 
+        engine
+    )
+
+    print("[8/8] Extracting DonDatHang & MatHangDuocDat...")
     data['dondathang'] = pd.read_sql(
         """
         SELECT 
@@ -171,7 +146,6 @@ def extract_from_postgres():
         engine
     )
     
-    print("[9/9] Extracting MatHangDuocDat...")
     data['mathang_duocdat'] = pd.read_sql(
         """
         SELECT 

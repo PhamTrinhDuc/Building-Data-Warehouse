@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS VanPhongDaiDien (
     maTP VARCHAR(10) PRIMARY KEY,
     tenThanhPho VARCHAR(255) NOT NULL,
     diaChiVP VARCHAR(255),
-    bang VARCHAR(255),
+    mien VARCHAR(255),
     ngayThanhLapVP DATE
 );
 
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS MatHang (
 -- Bảng Mặt hàng được trữ
 CREATE TABLE IF NOT EXISTS MatHangDuocTru (
     soLuongTrongKho INTEGER,
-    thoiGianNhap INTEGER,
+    thoiGianNhap DATE,
     MatHangmaMH VARCHAR(10),
     CuaHangmaCH VARCHAR(10),
     PRIMARY KEY (MatHangmaMH, CuaHangmaCH),
@@ -60,7 +60,7 @@ CREATE TABLE IF NOT EXISTS KhachHang (
 
 -- Bảng Khách hàng du lịch
 CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
-    hoiDuLich VARCHAR(10),
+    hdvDuLich VARCHAR(10),
     KhachHangmaKH VARCHAR(10) PRIMARY KEY,
     ngayDangKy DATE,
     FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
 
 -- Bảng Khách hàng bưu điện
 CREATE TABLE IF NOT EXISTS KhachHangBuiDien (
-    hoiDuLich VARCHAR(10),
+    diaChiBuuDien VARCHAR(10),
     KhachHangmaKH VARCHAR(10) PRIMARY KEY,
     ngayDangKy DATE,
     FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
