@@ -14,6 +14,7 @@ Cách sử dụng:
 """
 
 import psycopg2
+import psycopg2.extras
 from datetime import datetime, timedelta
 import random
 from faker import Faker
@@ -149,7 +150,7 @@ def create_schema_and_tables(conn):
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS MatHangDuocTru (
                 soLuongTrongKho INTEGER,
-                thoiGianNhap INTEGER,
+                thoiGianNhap DATE,
                 MatHangmaMH VARCHAR(10),
                 CuaHangmaCH VARCHAR(10),
                 PRIMARY KEY (MatHangmaMH, CuaHangmaCH),
@@ -172,7 +173,7 @@ def create_schema_and_tables(conn):
         # Bảng Khách hàng du lịch
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS KhachHangDuiLich (
-                hoiDuLich VARCHAR(10),
+                hdvDuLich VARCHAR(10),
                 ngayDangKy DATE,
                 KhachHangmaKH VARCHAR(10) PRIMARY KEY,
                 FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
@@ -182,7 +183,7 @@ def create_schema_and_tables(conn):
         # Bảng Khách hàng bưu điện
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS KhachHangBuiDien (
-                hoiDuLich VARCHAR(10),
+                diaChiBuuDien VARCHAR(10),
                 ngayDangKy DATE,
                 KhachHangmaKH VARCHAR(10) PRIMARY KEY,
                 FOREIGN KEY (KhachHangmaKH) REFERENCES KhachHang(maKH) ON DELETE CASCADE
@@ -475,9 +476,9 @@ def generate_mathang_duoctru(conn, num_mathang, num_cuahang):
     print(f"📊 Tạo {num_records} bản ghi mặt hàng được trữ...")
     
     generated = set()
-    count = 0
+    records = []
     
-    while count < num_records:
+    while len(records) < num_records:
         ma_mh = f'MH{random.randint(1, num_mathang):04d}'
         ma_ch = f'CH{random.randint(1, num_cuahang):03d}'
         
@@ -489,19 +490,21 @@ def generate_mathang_duoctru(conn, num_mathang, num_cuahang):
         
         so_luong = random.randint(0, 1000)
         thoi_gian_nhap = fake.date_between(start_date='-1y', end_date='today')
-        
-        try:
-            cursor.execute("""
-                INSERT INTO MatHangDuocTru (soLuongTrongKho, thoiGianNhap, MatHangmaMH, CuaHangmaCH)
-                VALUES (%s, %s, %s, %s)
-            """, (so_luong, thoi_gian_nhap, ma_mh, ma_ch))
-            count += 1
-        except:
-            continue
+        records.append((so_luong, thoi_gian_nhap, ma_mh, ma_ch))
+
+        if len(records) % 10000 == 0:
+            print(f"  ⏳ Đang tạo {len(records)}/{num_records}...")
+    
+    print("  🚀 Đang Insert vào DB...")
+    query = """
+        INSERT INTO MatHangDuocTru (soLuongTrongKho, thoiGianNhap, MatHangmaMH, CuaHangmaCH)
+        VALUES %s ON CONFLICT DO NOTHING
+    """
+    psycopg2.extras.execute_values(cursor, query, records, page_size=5000)
     
     conn.commit()
     cursor.close()
-    print(f"✅ Đã tạo {count} bản ghi mặt hàng được trữ")
+    print(f"✅ Đã tạo {len(records)} bản ghi mặt hàng được trữ")
 
 def generate_khachhang(conn, num_records, num_vanphong):
     """Tạo dữ liệu Khách hàng"""
@@ -537,7 +540,7 @@ def generate_khachhang(conn, num_records, num_vanphong):
         hoi_du_lich = f'HDL{random.randint(1, 50):03d}'
         ngay_dang_ky = fake.date_between(start_date='-1y', end_date='today')
         cursor.execute("""
-            INSERT INTO KhachHangDuiLich (hoiDuLich, ngayDangKy, KhachHangmaKH)
+            INSERT INTO KhachHangDuiLich (hdvDuLich, ngayDangKy, KhachHangmaKH)
             VALUES (%s, %s, %s)
         """, (hoi_du_lich, ngay_dang_ky, ma_kh))
     
@@ -546,7 +549,7 @@ def generate_khachhang(conn, num_records, num_vanphong):
         hoi_du_lich = f'PO{random.randint(1, 100):04d}'
         ngay_dang_ky = fake.date_between(start_date='-1y', end_date='today')
         cursor.execute("""
-            INSERT INTO KhachHangBuiDien (hoiDuLich, ngayDangKy, KhachHangmaKH)
+            INSERT INTO KhachHangBuiDien (diaChiBuuDien, ngayDangKy, KhachHangmaKH)
             VALUES (%s, %s, %s)
         """, (hoi_du_lich, ngay_dang_ky, ma_kh))
     
@@ -560,48 +563,50 @@ def generate_donhang(conn, num_records, num_khachhang, num_mathang, num_mh_per_d
     
     print(f"🛒 Tạo {num_records} đơn hàng...")
     
+    don_hang_records = []
+    mh_dat_records = []
+
     for i in range(1, num_records + 1):
         ma_don = f'DON{i:06d}'
         ngay_dat_hang = fake.date_between(start_date='-1y', end_date='today')
         ma_kh = f'KH{random.randint(1, num_khachhang):05d}'
         
-        try:
-            cursor.execute("""
-                INSERT INTO DonDatHang (maDon, ngayDatHang, KhachHangmaKH)
-                VALUES (%s, %s, %s)
-            """, (ma_don, ngay_dat_hang, ma_kh))
-            
-            # Tạo mặt hàng trong đơn
-            num_items = random.randint(1, num_mh_per_don * 2)
-            mat_hang_trong_don = set()
-            
-            for _ in range(num_items):
-                ma_mh = f'MH{random.randint(1, num_mathang):04d}'
-                
-                # Tránh trùng mặt hàng trong cùng đơn
-                if ma_mh in mat_hang_trong_don:
-                    continue
-                
-                mat_hang_trong_don.add(ma_mh)
-                
-                so_luong = random.randint(1, 20)
-                gia = round(random.uniform(10000, 5000000), 2)
-                
-                cursor.execute("""
-                    INSERT INTO MatHangDuocDat (soLuongDat, giaDat, MatHangmaMH, DonDatHangmaDon)
-                    VALUES (%s, %s, %s, %s)
-                """, (so_luong, gia, ma_mh, ma_don))
+        don_hang_records.append((ma_don, ngay_dat_hang, ma_kh))
         
-        except Exception as e:
-            continue
+        # Tạo mặt hàng trong đơn
+        num_items = random.randint(1, num_mh_per_don * 2)
+        mat_hang_trong_don = set()
         
-        if i % 100 == 0:
-            print(f"  ⏳ Đã tạo {i}/{num_records} đơn hàng...")
-            conn.commit()
+        for _ in range(num_items):
+            ma_mh = f'MH{random.randint(1, num_mathang):04d}'
+            
+            # Tránh trùng mặt hàng trong cùng đơn
+            if ma_mh in mat_hang_trong_don:
+                continue
+            
+            mat_hang_trong_don.add(ma_mh)
+            so_luong = random.randint(1, 20)
+            gia = round(random.uniform(10000, 5000000), 2)
+            mh_dat_records.append((so_luong, gia, ma_mh, ma_don))
+            
+        if i % 2000 == 0:
+            print(f"  ⏳ Đã chuẩn bị {i}/{num_records} đơn hàng...")
+            
+    print("  🚀 Đang Insert DonDatHang vào DB...")
+    psycopg2.extras.execute_values(cursor, """
+        INSERT INTO DonDatHang (maDon, ngayDatHang, KhachHangmaKH)
+        VALUES %s ON CONFLICT DO NOTHING
+    """, don_hang_records, page_size=5000)
+    
+    print("  🚀 Đang Insert MatHangDuocDat vào DB...")
+    psycopg2.extras.execute_values(cursor, """
+        INSERT INTO MatHangDuocDat (soLuongDat, giaDat, MatHangmaMH, DonDatHangmaDon)
+        VALUES %s ON CONFLICT DO NOTHING
+    """, mh_dat_records, page_size=5000)
     
     conn.commit()
     cursor.close()
-    print(f"✅ Đã tạo {num_records} đơn hàng")
+    print(f"✅ Đã tạo {num_records} đơn hàng với {len(mh_dat_records)} chi tiết mặt hàng")
 
 def main():
     """Hàm chính"""

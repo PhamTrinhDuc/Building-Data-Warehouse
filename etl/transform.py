@@ -108,8 +108,8 @@ def transform_data(source_data):
         ), on='makh', how='left'
     )
     kh = kh.merge(
-        khbd[['khachhangmakh', 'diachbuudien', 'ngaydangky']].rename(
-            columns={'khachhangmakh': 'makh', 'diachbuudien': 'diaChiBuuDien', 'ngaydangky': 'ngayDangKyBuuDien'}
+        khbd[['khachhangmakh', 'diachibuudien', 'ngaydangky']].rename(
+            columns={'khachhangmakh': 'makh', 'diachibuudien': 'diaChiBuuDien', 'ngaydangky': 'ngayDangKyBuuDien'}
         ), on='makh', how='left'
     )
 
