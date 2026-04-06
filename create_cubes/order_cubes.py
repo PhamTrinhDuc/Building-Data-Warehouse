@@ -496,7 +496,7 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             mien         String,
             tongDoanhThu Float64,
-            tongSoLuong  Int64,
+            tongSoLuong  Int64
         ) ENGINE = SummingMergeTree() ORDER BY mien;
         """
         self.execute(create_storage_sql)
@@ -508,6 +508,7 @@ class OrderCubeManager:
         TO {table_name} AS
         SELECT l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY l.mien;
         """
@@ -519,6 +520,7 @@ class OrderCubeManager:
         INSERT INTO {table_name}
         SELECT l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY l.mien;
         """
@@ -560,6 +562,7 @@ class OrderCubeManager:
         TO {table_name} AS
         SELECT l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY l.mien, l.tenThanhPho;
         """
@@ -571,6 +574,7 @@ class OrderCubeManager:
         INSERT INTO {table_name}
         SELECT l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY l.mien, l.tenThanhPho;
         """
@@ -594,29 +598,29 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            loaiKh       String,
+            loaiKhachHang       String,
             tongDoanhThu Float64,
             tongSoLuong  Int64,
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, loaiKh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, loaiKhachHang);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.loaiKh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, c.loaiKh;
+        GROUP BY t.nam, c.loaiKhachHang;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.loaiKh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, c.loaiKh;
+        GROUP BY t.nam, c.loaiKhachHang;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -633,30 +637,30 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maKh         String,
-            loaiKh       String,
+            maKH         String,
+            loaiKhachHang       String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.maKh, c.loaiKh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, c.maKH, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, c.maKh, c.loaiKh;
+        GROUP BY t.nam, c.maKH, c.loaiKhachHang;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.maKh, c.loaiKh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, c.maKH, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, c.maKh, c.loaiKh;
+        GROUP BY t.nam, c.maKH, c.loaiKhachHang;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -674,29 +678,29 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            loaiKh       String,
+            loaiKhachHang String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, loaiKh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, loaiKhachHang);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.loaiKh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.quy, c.loaiKh;
+        GROUP BY t.nam, t.quy, c.loaiKhachHang;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.loaiKh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.quy, c.loaiKh;
+        GROUP BY t.nam, t.quy, c.loaiKhachHang;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -714,29 +718,29 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maKh         String,
+            maKH         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.maKh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.quy, c.maKh;
+        GROUP BY t.nam, t.quy, c.maKH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.maKh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.quy, c.maKh;
+        GROUP BY t.nam, t.quy, c.maKH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
     
@@ -754,29 +758,29 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             thang        Int32,
-            loaiKh       String,
+            loaiKhachHang       String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, loaiKh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, loaiKhachHang);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.thang, c.loaiKh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.thang, c.loaiKh;
+        GROUP BY t.nam, t.thang, c.loaiKhachHang;
         """)
         # group by theo (nam, thang) để tránh gộp chung tháng của các nam khác nhau vào cùng 1 nhóm tháng, đồng thời group by thêm theo loại khách hàng để tránh gộp chung loại khách hàng của các tháng khác nhau vào cùng 1 nhóm loại khách hàng
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.thang, c.loaiKh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, c.loaiKhachHang, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.thang, c.loaiKh;
+        GROUP BY t.nam, t.thang, c.loaiKhachHang;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -794,29 +798,29 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             thang        Int32,
-            maKh         String,
+            maKH         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.thang, c.maKh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, c.maKH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.thang, c.maKh;
+        GROUP BY t.nam, t.thang, c.maKH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.thang, c.maKh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, c.maKH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
-        GROUP BY t.nam, t.thang, c.maKh;
+        GROUP BY t.nam, t.thang, c.maKH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -837,30 +841,30 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, p.maMh, p.tenMh;
+        GROUP BY t.nam, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, p.maMh, p.tenMh;
+        GROUP BY t.nam, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -878,30 +882,30 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.quy, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.quy, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.quy, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.quy, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.quy, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.quy, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -919,30 +923,30 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             thang        Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.thang, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.thang, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.thang, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.thang, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.thang, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.thang, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -972,18 +976,20 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, l.mien;
         """)
@@ -1002,28 +1008,30 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            thanhPho     String,
+            tenThanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, mien, tenThanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, l.tenThanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, l.tenThanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, l.mien, l.tenThanhPho;
         """)
@@ -1055,6 +1063,7 @@ class OrderCubeManager:
         SELECT t.nam, t.quy, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.quy, l.mien;
         """)
@@ -1064,6 +1073,7 @@ class OrderCubeManager:
         SELECT t.nam, t.quy, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.quy, l.mien;
         """)
@@ -1083,11 +1093,11 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            thanhPho     String,
+            tenThanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, mien, tenThanhPho);
         """)
         
         self.execute(f"""
@@ -1096,6 +1106,7 @@ class OrderCubeManager:
         SELECT t.nam, t.quy, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.quy, l.mien, l.tenThanhPho;
         """)
@@ -1105,6 +1116,7 @@ class OrderCubeManager:
         SELECT t.nam, t.quy, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.quy, l.mien, l.tenThanhPho;
         """)
@@ -1133,18 +1145,20 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.thang, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.thang, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.thang, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.thang, l.mien;
         """)
@@ -1164,29 +1178,32 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             thang        Int32,
-            thanhPho     String,
+            tenThanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, mien, tenThanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.thang, l.tenThanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
         GROUP BY t.nam, t.thang, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.thang, l.tenThanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT t.nam, t.thang, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
+
         GROUP BY t.nam, t.thang, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
@@ -1207,31 +1224,31 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            loaiKh       String,
-            maMh         String,
-            tenMh        String,
+            loaiKhachHang       String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (loaiKhachHang, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.loaiKhachHang, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY c.loaiKhachHang, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.loaiKhachHang, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY c.loaiKhachHang, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1247,31 +1264,31 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maKh         String,
-            maMh         String,
-            tenMh        String,
+            maKH         String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (maKH, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) AS tongDoanhThu, SUM(f.soLuongDat) AS tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.maKh, p.maMh, p.tenMh;
+        GROUP BY c.maKH, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) AS tongDoanhThu, SUM(f.soLuongDat) AS tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.maKh, p.maMh, p.tenMh;
+        GROUP BY c.maKH, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1291,30 +1308,30 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            loaiKh       String,
+            loaiKhachHang       String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (loaiKhachHang, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.loaiKh, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.loaiKhachHang, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY c.loaiKh, l.mien;
+        GROUP BY c.loaiKhachHang, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.loaiKh, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.loaiKhachHang, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY c.loaiKh, l.mien;
+        GROUP BY c.loaiKhachHang, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1330,29 +1347,31 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            loaiKh       String,
-            thanhPho     String,
+            loaiKhachHang       String,
+            tenThanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (loaiKhachHang, mien, tenThanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT l.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.loaiKhachHang, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY l.loaiKh, l.mien, l.tenThanhPho;
+        GROUP BY c.loaiKhachHang, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT l.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.loaiKhachHang, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY l.loaiKh, l.mien, l.tenThanhPho;
+        GROUP BY c.loaiKhachHang, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1368,29 +1387,31 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maKh         String,
-            thanhPho     String,
+            maKH         String,
+            tenThanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maKh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (maKH, mien, tenThanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT l.maKh, l.thanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) AS tongDoanhThu, SUM(f.soLuongDat) AS tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY l.maKh, l.mien, l.thanhPho;
+        GROUP BY c.maKH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
-        INSERT INTO {table_name}
-        SELECT l.maKh, l.thanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        INSERT INTO {table_name} 
+        SELECT c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) AS tongDoanhThu, SUM(f.soLuongDat) AS tongSoLuong
         FROM Fact_DonDatHang f
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY l.maKh, l.mien, l.thanhPho;
+        GROUP BY c.maKH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1406,30 +1427,30 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maKh         String,
+            maKH         String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maKh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (maKH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY c.maKh, l.mien;
+        GROUP BY c.maKH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY c.maKh, l.mien;
+        GROUP BY c.maKH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1449,31 +1470,33 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maMh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (maMH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT p.maMh, p.tenMh, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY p.maMh, p.tenMh, l.mien;
+        GROUP BY p.maMH, p.tenMH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT p.maMh, p.tenMh, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY p.maMh, p.tenMh, l.mien;
+        GROUP BY p.maMH, p.tenMH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1489,32 +1512,34 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maMh         String,
-            tenMh        String,
-            thanhPho     String,
+            maMH         String,
+            tenMH        String,
+            tenThanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maMh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (maMH, mien, tenThanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien), SUM(f.soLuongDat)
+        SELECT p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
+        JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1536,32 +1561,32 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             loaiKh       String,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, loaiKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, loaiKh, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.loaiKh, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, c.loaiKh, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.loaiKh, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, c.loaiKh, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1580,32 +1605,32 @@ class OrderCubeManager:
             thang        Int32,
             nam          Int32,
             loaiKh       String,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, loaiKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, loaiKh, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.loaiKh, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.thang, c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.thang, c.loaiKh, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.loaiKh, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.thang, c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.thang, c.loaiKh, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1624,32 +1649,32 @@ class OrderCubeManager:
             nam          Int32,
             quy          Int32,
             loaiKh       String,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, loaiKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, loaiKh, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.loaiKh, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.quy, c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.quy, c.loaiKh, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.loaiKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.loaiKh, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.quy, c.loaiKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.quy, c.loaiKh, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1666,33 +1691,33 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maKh         String,
-            maMh         String,
-            tenMh        String,
+            maKH         String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKH, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, c.maKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, c.maKH, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, c.maKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, c.maKH, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1710,33 +1735,33 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             thang        Int32,
             nam          Int32,
-            maKh         String,
-            maMh         String,
-            tenMh        String,
+            maKH         String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKH, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.thang, c.maKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.thang, c.maKH, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.thang, c.maKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.thang, c.maKH, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -1754,33 +1779,33 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maKh         String,
-            maMh         String,
-            tenMh        String,
+            maKH         String,
+            maMH         String,
+            tenMH        String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKh, maMh);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKH, maMH);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.quy, c.maKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.quy, c.maKH, p.maMH, p.tenMH;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.maKh, p.maMh, p.tenMh, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, p.maMH, p.tenMH, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY t.nam, t.quy, c.maKh, p.maMh, p.tenMh;
+        GROUP BY t.nam, t.quy, c.maKH, p.maMH, p.tenMH;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
     # ============================================================
@@ -1926,32 +1951,32 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maKh         String,
+            maKH         String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, c.maKh, l.mien;
+        GROUP BY t.nam, c.maKH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, c.maKh, l.mien;
+        GROUP BY t.nam, c.maKH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
     
@@ -1969,32 +1994,32 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             thang        Int32,
             nam          Int32,
-            maKh         String,
+            maKH         String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, c.maKh, l.mien;
+        GROUP BY t.nam, t.thang, c.maKH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, c.maKh, l.mien;
+        GROUP BY t.nam, t.thang, c.maKH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
     
@@ -2012,32 +2037,32 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maKh         String,
+            maKH         String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, c.maKh, l.mien;
+        GROUP BY t.nam, t.quy, c.maKH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.maKh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, c.maKh, l.mien;
+        GROUP BY t.nam, t.quy, c.maKH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
     
@@ -2054,33 +2079,33 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maKh         String,
+            maKH         String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maKH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.maKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, c.maKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, c.maKH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.maKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, c.maKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, c.maKH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2098,33 +2123,33 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             thang        Int32,
             nam          Int32,
-            maKh         String,
+            maKH         String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maKH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, c.maKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, c.maKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.thang, c.maKH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, c.maKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, c.maKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.thang, c.maKH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2142,33 +2167,33 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maKh         String,
+            maKH         String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maKH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.maKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, c.maKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.quy, c.maKH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.maKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.maKH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, c.maKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.quy, c.maKH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2196,22 +2221,22 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, c.loaiKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, c.loaiKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, c.loaiKh, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, c.loaiKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, c.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, c.loaiKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, c.loaiKh, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2240,22 +2265,22 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, c.loaiKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, c.loaiKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.thang, c.loaiKh, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, c.loaiKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, c.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, c.loaiKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.thang, c.loaiKh, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2284,22 +2309,22 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, c.loaiKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, c.loaiKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.quy, c.loaiKh, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, c.loaiKh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, c.loaiKh, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, c.loaiKh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.quy, c.loaiKh, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2320,33 +2345,33 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maMh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maMH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, p.maMh, p.tenMh, l.mien;
+        GROUP BY t.nam, p.maMH, p.tenMH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, p.maMh, p.tenMh, l.mien;
+        GROUP BY t.nam, p.maMH, p.tenMH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
     
@@ -2364,33 +2389,33 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             thang        Int32,
             nam          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maMh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maMH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, p.maMh, p.tenMh, l.mien;
+        GROUP BY t.nam, t.thang, p.maMH, p.tenMH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, p.maMh, p.tenMh, l.mien;
+        GROUP BY t.nam, t.thang, p.maMH, p.tenMH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2408,33 +2433,33 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maMh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maMH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, p.maMh, p.tenMh, l.mien;
+        GROUP BY t.nam, t.quy, p.maMH, p.tenMH, l.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, p.maMh, p.tenMh, l.mien;
+        GROUP BY t.nam, t.quy, p.maMH, p.tenMH, l.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2451,34 +2476,34 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, maMh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, maMH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY t.nam, p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY t.nam, p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2496,34 +2521,34 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             thang        Int32,
             nam          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maMh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, thang, maMH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.thang, t.nam, p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.thang, p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.thang, t.nam, p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.thang, t.nam, p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.thang, p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.thang, p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2541,34 +2566,34 @@ class OrderCubeManager:
         CREATE TABLE IF NOT EXISTS {table_name} (
             nam          Int32,
             quy          Int32,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maMh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (nam, quy, maMH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT t.nam, t.quy, p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.quy, p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT t.nam, t.quy, p.maMh, p.tenMh, l.thanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT t.nam, t.quy, p.maMH, p.tenMH, l.tenThanhPho, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_ThoiGian t ON f.sk_thoiGian = t.sk_thoiGian
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
         JOIN Dim_DiaDiem l ON c.sk_diaDiem = l.sk_diaDiem
-        GROUP BY t.nam, t.quy, p.maMh, p.tenMh, l.mien, l.thanhPho;
+        GROUP BY t.nam, t.quy, p.maMH, p.tenMH, l.mien, l.tenThanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2589,31 +2614,31 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             loaiKh       String,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, maMh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, maMH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.loaiKh, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.loaiKh, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.loaiKh, p.maMh, p.tenMh, c.mien;
+        GROUP BY c.loaiKh, p.maMH, p.tenMH, c.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.loaiKh, p.maMh, p.tenMh, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.loaiKh, p.maMH, p.tenMH, l.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.loaiKh, p.maMh, p.tenMh, c.mien;
+        GROUP BY c.loaiKh, p.maMH, p.tenMH, c.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2630,32 +2655,32 @@ class OrderCubeManager:
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
             loaiKh       String,
-            maMh         String,
-            tenMh        String,
+            maMH         String,
+            tenMH        String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, maMh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (loaiKh, maMH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.loaiKh, p.maMh, p.tenMh, c.tenThanhPho, c.mien,, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.loaiKh, p.maMH, p.tenMH, c.tenThanhPho, c.mien,, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.loaiKh, p.maMh, p.tenMh, c.mien, c.tenThanhPho;
+        GROUP BY c.loaiKh, p.maMH, p.tenMH, c.mien, c.tenThanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.loaiKh, p.maMh, p.tenMh, c.tenThanhPho, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.loaiKh, p.maMH, p.tenMH, c.tenThanhPho, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.loaiKh, p.maMh, p.tenMh, c.mien, c.thanhPho;
+        GROUP BY c.loaiKh, p.maMH, p.tenMH, c.mien, c.thanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2671,32 +2696,32 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maKh         String,
-            maMh         String,
-            tenMh        String,
+            maKH         String,
+            maMH         String,
+            tenMH        String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maKh, maMh, mien);
+        ) ENGINE = SummingMergeTree() ORDER BY (maKH, maMH, mien);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.maKh, p.maMh, p.tenMh, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.maKH, p.maMH, p.tenMH, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.maKh, p.maMh, p.tenMh, c.mien;
+        GROUP BY c.maKH, p.maMH, p.tenMH, c.mien;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.maKh, p.maMh, p.tenMh, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.maKH, p.maMH, p.tenMH, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.maKh, p.maMh, p.tenMh, c.mien;
+        GROUP BY c.maKH, p.maMH, p.tenMH, c.mien;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2712,33 +2737,33 @@ class OrderCubeManager:
         
         self.execute(f"""
         CREATE TABLE IF NOT EXISTS {table_name} (
-            maKh         String,
-            maMh         String,
-            tenMh        String,
+            maKH         String,
+            maMH         String,
+            tenMH        String,
             thanhPho     String,
             mien         String,
             tongDoanhThu Float64,
             tongSoLuong  Int64
-        ) ENGINE = SummingMergeTree() ORDER BY (maKh, maMh, mien, thanhPho);
+        ) ENGINE = SummingMergeTree() ORDER BY (maKH, maMH, mien, thanhPho);
         """)
         
         self.execute(f"""
         CREATE MATERIALIZED VIEW IF NOT EXISTS {view_name}
         TO {table_name} AS
-        SELECT c.maKh, p.maMh, p.tenMh, c.thanhPho, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.maKH, p.maMH, p.tenMH, c.thanhPho, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.maKh, p.maMh, p.tenMh, c.mien, c.thanhPho;
+        GROUP BY c.maKH, p.maMH, p.tenMH, c.mien, c.thanhPho;
         """)
         
         self.execute(f"""
         INSERT INTO {table_name}
-        SELECT c.maKh, p.maMh, p.tenMh, c.thanhPho, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
+        SELECT c.maKH, p.maMH, p.tenMH, c.thanhPho, c.mien, SUM(f.thanhTien) as tongDoanhThu, SUM(f.soLuongDat) as tongSoLuong
         FROM Fact_DonDatHang f
         JOIN Dim_KhachHang c ON f.sk_khachHang = c.sk_khachHang
         JOIN Dim_MatHang p ON f.sk_matHang = p.sk_matHang
-        GROUP BY c.maKh, p.maMh, p.tenMh, c.mien, c.thanhPho;
+        GROUP BY c.maKH, p.maMH, p.tenMH, c.mien, c.thanhPho;
         """)
         logger.info(f"✅ {table_name} tạo thành công")
 
@@ -2892,7 +2917,7 @@ def main(mode: str = 'all') -> None:
         # Tạo tất cả cube
         # Để xóa cube cũ trước khi tạo mới, set drop_if_exists=True
         if mode == 'all':
-            manager.create_all_cubes(drop_if_exists=False)
+            manager.create_all_cubes(drop_if_exists=True)
 
         # create cube 0d: 
         elif mode == '0d':
