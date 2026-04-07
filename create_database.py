@@ -274,12 +274,14 @@ def generate_vanphong_daidien(conn, num_records):
 
     print(f"📍 Tạo {num_records} văn phòng đại diện...")
     
+    start_date_vp = datetime(2020, 1, 1).date()
+    
     for i in range(1, num_records + 1):
         ma_tp = f'TP{i:03d}'
-        thanh_pho = random.choice(cities)
+        thanh_pho = cities[i % len(cities)]
         dia_chi = fake.street_address()
         mien = mien_map[thanh_pho]
-        ngay_thanh_lap = fake.date_between(start_date='-5y', end_date='today')
+        ngay_thanh_lap = start_date_vp + timedelta(days=(i * 17) % 1000)
         
         cursor.execute("""
             INSERT INTO VanPhongDaiDien (maTP, tenThanhPho, diaChiVP, mien, ngayThanhLapVP)
@@ -296,11 +298,13 @@ def generate_cuahang(conn, num_records, num_vanphong):
     
     print(f"🏪 Tạo {num_records} cửa hàng...")
     
+    start_date_ch = datetime(2021, 1, 1).date()
+    
     for i in range(1, num_records + 1):
         ma_ch = f'CH{i:03d}'
         so_dien_thoai = fake.phone_number()[:10]
-        ngay_thanh_lap = fake.date_between(start_date='-3y', end_date='today')
-        ma_vp = f'TP{random.randint(1, num_vanphong):03d}'
+        ngay_thanh_lap = start_date_ch + timedelta(days=(i * 23) % 1000)
+        ma_vp = f'TP{(i % num_vanphong) + 1:03d}'
         
         cursor.execute("""
             INSERT INTO CuaHang (maCH, soDienThoai, ngayThanhLapCH, VanPhongDaiDienmaTP)
@@ -456,7 +460,7 @@ def generate_mathang(conn, num_records):
         kich_co = random.choice(sizes)
         trong_luong = round(random.uniform(0.1, 50.0), 2)
         gia = round(random.uniform(10000, 5000000), 2)
-        ngay_cap_nhat = fake.date_between(start_date='-2y', end_date='today')
+        ngay_cap_nhat = datetime(2025, 1, 1).date() + timedelta(days=(i * 13) % 730)
         
         cursor.execute("""
             INSERT INTO MatHang (maMH, tenMH, moTa, kichCo, trongLuong, Gia, ngayCapNhat)
@@ -471,29 +475,25 @@ def generate_mathang_duoctru(conn, num_mathang, num_cuahang):
     """Tạo dữ liệu Mặt hàng được trữ (tồn kho)"""
     cursor = conn.cursor()
     
-    # Mỗi cửa hàng có khoảng 30-50% số mặt hàng
-    num_records = int(num_cuahang * num_mathang * 0.4)
-    print(f"📊 Tạo {num_records} bản ghi mặt hàng được trữ...")
+    # Mỗi mặt hàng có mặt ở 40% cửa hàng được chọn ngẫu nhiên
+    print(f"📊 Tạo dữ liệu mặt hàng được trữ...")
     
-    generated = set()
     records = []
+    start_date_nhap = datetime(2025, 1, 1).date()
     
-    while len(records) < num_records:
-        ma_mh = f'MH{random.randint(1, num_mathang):04d}'
-        ma_ch = f'CH{random.randint(1, num_cuahang):03d}'
-        
-        # Tránh trùng lặp
-        if (ma_mh, ma_ch) in generated:
-            continue
-        
-        generated.add((ma_mh, ma_ch))
-        
-        so_luong = random.randint(0, 1000)
-        thoi_gian_nhap = fake.date_between(start_date='-1y', end_date='today')
-        records.append((so_luong, thoi_gian_nhap, ma_mh, ma_ch))
-
-        if len(records) % 10000 == 0:
-            print(f"  ⏳ Đang tạo {len(records)}/{num_records}...")
+    # Đảm bảo mỗi mặt hàng có mặt ở nhiều cửa hàng phân bổ qua nhiều vùng miền
+    for i in range(1, num_mathang + 1):
+        ma_mh = f'MH{i:04d}'
+        # Cửa hàng được lấy mẫu random từ toàn bộ tập hợp, đảm bảo rải rác
+        selected_stores = random.sample(range(1, num_cuahang + 1), int(num_cuahang * 0.4))
+        for j in selected_stores:
+            ma_ch = f'CH{j:03d}'
+            so_luong = random.randint(10, 1000)
+            thoi_gian_nhap = start_date_nhap + timedelta(days=random.randint(0, 729))
+            records.append((so_luong, thoi_gian_nhap, ma_mh, ma_ch))
+            
+            if len(records) % 10000 == 0:
+                print(f"  ⏳ Đang tạo {len(records)} bản ghi...")
     
     print("  🚀 Đang Insert vào DB...")
     query = """
@@ -515,11 +515,14 @@ def generate_khachhang(conn, num_records, num_vanphong):
     khach_hang_dulich = []
     khach_hang_buudien = []
     
+    start_date_kh = datetime(2025, 1, 1).date()
+    start_date_dk = datetime(2025, 1, 1).date()
+    
     for i in range(1, num_records + 1):
         ma_kh = f'KH{i:05d}'
         ten_kh = fake.name()
-        ngay_dat_dau_tien = fake.date_between(start_date='-2y', end_date='today')
-        ma_vp = f'TP{random.randint(1, num_vanphong):03d}'
+        ngay_dat_dau_tien = start_date_kh + timedelta(days=i % 730)
+        ma_vp = f'TP{(i % num_vanphong) + 1:03d}'
         
         cursor.execute("""
             INSERT INTO KhachHang (maKH, tenKH, ngayDatDauTien, VanPhongDaiDienmaTP)
@@ -538,7 +541,7 @@ def generate_khachhang(conn, num_records, num_vanphong):
     # Tạo khách hàng du lịch
     for ma_kh in khach_hang_dulich:
         hoi_du_lich = f'HDL{random.randint(1, 50):03d}'
-        ngay_dang_ky = fake.date_between(start_date='-1y', end_date='today')
+        ngay_dang_ky = start_date_dk + timedelta(days=random.randint(0, 729))
         cursor.execute("""
             INSERT INTO KhachHangDuiLich (hdvDuLich, ngayDangKy, KhachHangmaKH)
             VALUES (%s, %s, %s)
@@ -547,7 +550,7 @@ def generate_khachhang(conn, num_records, num_vanphong):
     # Tạo khách hàng bưu điện
     for ma_kh in khach_hang_buudien:
         hoi_du_lich = f'PO{random.randint(1, 100):04d}'
-        ngay_dang_ky = fake.date_between(start_date='-1y', end_date='today')
+        ngay_dang_ky = start_date_dk + timedelta(days=random.randint(0, 729))
         cursor.execute("""
             INSERT INTO KhachHangBuiDien (diaChiBuuDien, ngayDangKy, KhachHangmaKH)
             VALUES (%s, %s, %s)
@@ -566,10 +569,12 @@ def generate_donhang(conn, num_records, num_khachhang, num_mathang, num_mh_per_d
     don_hang_records = []
     mh_dat_records = []
 
+    start_date_dh = datetime(2025, 1, 1).date()
+
     for i in range(1, num_records + 1):
         ma_don = f'DON{i:06d}'
-        ngay_dat_hang = fake.date_between(start_date='-1y', end_date='today')
-        ma_kh = f'KH{random.randint(1, num_khachhang):05d}'
+        ngay_dat_hang = start_date_dh + timedelta(days=i % 730)
+        ma_kh = f'KH{(i % num_khachhang) + 1:05d}'
         
         don_hang_records.append((ma_don, ngay_dat_hang, ma_kh))
         
