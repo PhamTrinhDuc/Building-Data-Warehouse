@@ -23,10 +23,10 @@ from faker import Faker
 # ĐIỀU CHỈNH SỐ LƯỢNG BẢN GHI TẠI ĐÂY
 # ============================================
 NUM_VAN_PHONG = 80          # Số văn phòng đại diện
-NUM_CUA_HANG = 300        # Số cửa hàng
+NUM_CUA_HANG = 100        # Số cửa hàng
 NUM_MAT_HANG = 2000          # Số mặt hàng
 NUM_KHACH_HANG = 5000        # Số khách hàng
-NUM_DON_HANG = 10000       # Số đơn hàng
+NUM_DON_HANG = 20000       # Số đơn hàng
 NUM_MAT_HANG_PER_DON = 4    # Số mặt hàng trung bình mỗi đơn
 
 # ============================================
@@ -274,14 +274,16 @@ def generate_vanphong_daidien(conn, num_records):
 
     print(f"📍 Tạo {num_records} văn phòng đại diện...")
     
-    start_date_vp = datetime(2020, 1, 1).date()
+    # Thành lập từ 2018
+    start_date_vp = datetime(2018, 1, 1).date()
     
     for i in range(1, num_records + 1):
         ma_tp = f'TP{i:03d}'
         thanh_pho = cities[i % len(cities)]
         dia_chi = fake.street_address()
         mien = mien_map[thanh_pho]
-        ngay_thanh_lap = start_date_vp + timedelta(days=(i * 17) % 1000)
+        # VP mở cửa trong vòng ~2 năm từ 2018
+        ngay_thanh_lap = start_date_vp + timedelta(days=(i * 17) % 730)
         
         cursor.execute("""
             INSERT INTO VanPhongDaiDien (maTP, tenThanhPho, diaChiVP, mien, ngayThanhLapVP)
@@ -296,15 +298,20 @@ def generate_cuahang(conn, num_records, num_vanphong):
     """Tạo dữ liệu Cửa hàng"""
     cursor = conn.cursor()
     
-    print(f"🏪 Tạo {num_records} cửa hàng...")
+    cursor.execute("SELECT maTP, ngayThanhLapVP FROM VanPhongDaiDien;")
+    vp_dates = {row[0]: row[1] for row in cursor.fetchall()}
+    vp_list = list(vp_dates.keys())
     
-    start_date_ch = datetime(2021, 1, 1).date()
+    print(f"🏪 Tạo {num_records} cửa hàng...")
     
     for i in range(1, num_records + 1):
         ma_ch = f'CH{i:03d}'
-        so_dien_thoai = fake.phone_number()[:10]
-        ngay_thanh_lap = start_date_ch + timedelta(days=(i * 23) % 1000)
-        ma_vp = f'TP{(i % num_vanphong) + 1:03d}'
+        so_dien_thoai = str(random.randint(100000000, 999999999))
+        ma_vp = vp_list[i % len(vp_list)]
+        vp_date = vp_dates[ma_vp]
+        
+        # Cửa hàng mở sau VP (random từ 1 tháng đến 4 năm sau VP)
+        ngay_thanh_lap = vp_date + timedelta(days=random.randint(30, 1460))
         
         cursor.execute("""
             INSERT INTO CuaHang (maCH, soDienThoai, ngayThanhLapCH, VanPhongDaiDienmaTP)
@@ -460,7 +467,9 @@ def generate_mathang(conn, num_records):
         kich_co = random.choice(sizes)
         trong_luong = round(random.uniform(0.1, 50.0), 2)
         gia = round(random.uniform(10000, 5000000), 2)
-        ngay_cap_nhat = datetime(2025, 1, 1).date() + timedelta(days=(i * 13) % 730)
+        
+        # Mặt hàng được release rải rác từ 2022 đến 2026
+        ngay_cap_nhat = datetime(2022, 1, 1).date() + timedelta(days=(i * 13) % 1500)
         
         cursor.execute("""
             INSERT INTO MatHang (maMH, tenMH, moTa, kichCo, trongLuong, Gia, ngayCapNhat)
@@ -475,21 +484,28 @@ def generate_mathang_duoctru(conn, num_mathang, num_cuahang):
     """Tạo dữ liệu Mặt hàng được trữ (tồn kho)"""
     cursor = conn.cursor()
     
-    # Mỗi mặt hàng có mặt ở 40% cửa hàng được chọn ngẫu nhiên
+    cursor.execute("SELECT maCH, ngayThanhLapCH FROM CuaHang;")
+    ch_dates = {row[0]: row[1] for row in cursor.fetchall()}
+    
     print(f"📊 Tạo dữ liệu mặt hàng được trữ...")
-    
     records = []
-    start_date_nhap = datetime(2025, 1, 1).date()
     
-    # Đảm bảo mỗi mặt hàng có mặt ở nhiều cửa hàng phân bổ qua nhiều vùng miền
+    # Đảm bảo mỗi mặt hàng có mặt ở 40% cửa hàng 
     for i in range(1, num_mathang + 1):
         ma_mh = f'MH{i:04d}'
-        # Cửa hàng được lấy mẫu random từ toàn bộ tập hợp, đảm bảo rải rác
         selected_stores = random.sample(range(1, num_cuahang + 1), int(num_cuahang * 0.4))
         for j in selected_stores:
             ma_ch = f'CH{j:03d}'
+            ch_date = ch_dates.get(ma_ch, datetime(2022, 1, 1).date())
             so_luong = random.randint(10, 1000)
-            thoi_gian_nhap = start_date_nhap + timedelta(days=random.randint(0, 729))
+            
+            # Thời gian nhập kho ưu tiên sau khi CH mở tới 2026 (thiên về 2025-2026)
+            days_diff = (datetime(2026, 12, 31).date() - ch_date).days
+            if days_diff > 730:
+                thoi_gian_nhap = ch_date + timedelta(days=random.randint(days_diff - 730, days_diff))
+            else:
+                thoi_gian_nhap = ch_date + timedelta(days=random.randint(0, max(0, days_diff)))
+                
             records.append((so_luong, thoi_gian_nhap, ma_mh, ma_ch))
             
             if len(records) % 10000 == 0:
@@ -564,28 +580,39 @@ def generate_donhang(conn, num_records, num_khachhang, num_mathang, num_mh_per_d
     """Tạo dữ liệu Đơn hàng và Mặt hàng được đặt"""
     cursor = conn.cursor()
     
+    cursor.execute("SELECT maKH, ngayDatDauTien FROM KhachHang;")
+    kh_dates = {row[0]: row[1] for row in cursor.fetchall()}
+    kh_list = list(kh_dates.keys())
+    
     print(f"🛒 Tạo {num_records} đơn hàng...")
     
     don_hang_records = []
     mh_dat_records = []
 
-    start_date_dh = datetime(2025, 1, 1).date()
+    start_date_2025 = datetime(2025, 1, 1).date()
 
     for i in range(1, num_records + 1):
         ma_don = f'DON{i:06d}'
-        ngay_dat_hang = start_date_dh + timedelta(days=i % 730)
-        ma_kh = f'KH{(i % num_khachhang) + 1:05d}'
+        ma_kh = kh_list[i % len(kh_list)]
+        kh_date = kh_dates[ma_kh]
         
+        # Ngày mua >= Ngày đăng ký KH. Ở đây tập trung phần lớn đơn vào 2025 - 2026
+        base_date = max(kh_date, start_date_2025)
+        days_diff = (datetime(2026, 12, 31).date() - base_date).days
+        
+        if days_diff <= 0:
+            ngay_dat_hang = base_date
+        else:
+            ngay_dat_hang = base_date + timedelta(days=random.randint(0, days_diff))
+            
         don_hang_records.append((ma_don, ngay_dat_hang, ma_kh))
         
-        # Tạo mặt hàng trong đơn
+        # Mặt hàng trong đơn
         num_items = random.randint(1, num_mh_per_don * 2)
         mat_hang_trong_don = set()
         
         for _ in range(num_items):
             ma_mh = f'MH{random.randint(1, num_mathang):04d}'
-            
-            # Tránh trùng mặt hàng trong cùng đơn
             if ma_mh in mat_hang_trong_don:
                 continue
             
