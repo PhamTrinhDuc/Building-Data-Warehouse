@@ -1,5 +1,5 @@
 # Từ Điển Kho Dữ Liệu (Technical Metadata - Data Warehouse)
-*Được tạo tự động từ ClickHouse vào lúc: 2026-04-12 22:32:37*
+*Được tạo tự động từ ClickHouse vào lúc: 2026-04-13 20:57:38*
 
 ### Bảng DW: `Dim_CuaHang`
 | Tên Cột | Kiểu Dữ Liệu (ClickHouse) | Vai Trò (Mapping/Surrogate/Measure) | Ghi Chú |

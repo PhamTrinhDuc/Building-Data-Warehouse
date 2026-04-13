@@ -2974,4 +2974,4 @@ def main(mode: str = 'all') -> None:
         manager.disconnect()
 
 if __name__ == '__main__':
-    main(mode='2d')
+    main(mode='3d')
